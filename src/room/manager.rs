@@ -114,6 +114,7 @@ pub enum RoomCommand {
     SendEmote { number: u32, fx: f64, fy: f64, reference: String },
     Profile(Profile),
     RetryInternet,
+    RetryLan,
     Wake,
     Quit,
 }
@@ -443,6 +444,16 @@ impl Core {
                     self.nets[i].net.retry();
                 }
             }
+            RoomCommand::RetryLan => {
+                if self.phase != Phase::Idle {
+                    self.open_lan();
+                    if let Some(i) = self.slot_idx(TransportKind::Lan) {
+                        self.nets[i].active = true;
+                        self.nets[i].net.retry();
+                    }
+                }
+                self.emit_state(now);
+            }
             RoomCommand::Wake => {
                 self.woke_at = now;
                 for i in 0..self.nets.len() {
@@ -483,13 +494,7 @@ impl Core {
         self.settle_short = false;
         self.settle_at = Some(now + SETTLE_CAP_MS);
 
-        // The port may have been taken when the process started: bind it again now, if it is free.
-        if self.slot_idx(TransportKind::Lan).is_none() {
-            let (tx, rx) = channel();
-            if let Some(handle) = self.lan_factory.as_mut().and_then(|make| make(tx)) {
-                self.add_net(Box::new(handle), rx);
-            }
-        }
+        self.open_lan();
 
         for i in 0..self.nets.len() {
             if self.nets[i].kind == TransportKind::Internet && !self.internet_allowed {
@@ -501,6 +506,17 @@ impl Core {
         self.announce(None, now);
         self.check_settle(now);
         self.emit_state(now);
+    }
+
+    /// Gives the room a LAN transport, unless one is already there: a taken port is reported, not fatal.
+    fn open_lan(&mut self) {
+        if self.slot_idx(TransportKind::Lan).is_some() {
+            return;
+        }
+        let (tx, rx) = channel();
+        if let Some(handle) = self.lan_factory.as_mut().and_then(|make| make(tx)) {
+            self.add_net(Box::new(handle), rx);
+        }
     }
 
     fn stop(&mut self, now: i64, drain: bool) {
@@ -1214,10 +1230,26 @@ impl Room {
 mod tests {
     use super::*;
     use crate::room::transport::TransportCommand;
+    use std::net::UdpSocket;
     use std::sync::atomic::{AtomicI64, Ordering};
+    use std::time::Instant;
 
     const KEY: [u8; 32] = [1u8; 32];
     const T0: i64 = 1_780_000_000_000;
+
+    /// The two tests that take the real LAN port cannot run at the same time.
+    static LAN_PORT_SERIAL: Mutex<()> = Mutex::new(());
+
+    // Generous: the whole suite runs at once, and a starved thread is not a bug.
+    fn wait_until(deadline: Instant, mut done: impl FnMut() -> bool) -> bool {
+        while Instant::now() < deadline {
+            if done() {
+                return true;
+            }
+            thread::sleep(Duration::from_millis(10));
+        }
+        done()
+    }
 
     type Shared = Arc<Mutex<FakeState>>;
 
@@ -2532,19 +2564,7 @@ mod tests {
 
     #[test]
     fn binds_lan_on_a_room_start_when_the_port_was_taken_at_process_start() {
-        use std::net::UdpSocket;
-        use std::time::Instant;
-
-        fn wait_until(deadline: Instant, mut done: impl FnMut() -> bool) -> bool {
-            while Instant::now() < deadline {
-                if done() {
-                    return true;
-                }
-                thread::sleep(Duration::from_millis(10));
-            }
-            done()
-        }
-
+        let _serial = LAN_PORT_SERIAL.lock();
         let held = UdpSocket::bind(("0.0.0.0", crate::room::lan::LAN_PORT)).expect("hold the lan port");
         let (events, _rx) = channel();
         let room = Room::start(
@@ -2555,13 +2575,39 @@ mod tests {
             events,
         );
         room.send(RoomCommand::Create);
-        assert!(wait_until(Instant::now() + Duration::from_secs(2), || room.state().phase != Phase::Idle));
+        assert!(wait_until(Instant::now() + Duration::from_secs(15), || room.state().phase != Phase::Idle));
         assert_eq!(room.state().lan, Link::Unavailable);
 
         drop(held);
         room.send(RoomCommand::Create);
         assert!(
-            wait_until(Instant::now() + Duration::from_secs(5), || room.state().lan == Link::Ok),
+            wait_until(Instant::now() + Duration::from_secs(15), || room.state().lan == Link::Ok),
+            "lan stayed {:?}",
+            room.state().lan
+        );
+        room.shutdown();
+    }
+
+    #[test]
+    fn retry_lan_binds_the_port_once_it_is_free() {
+        let _serial = LAN_PORT_SERIAL.lock();
+        let held = UdpSocket::bind(("0.0.0.0", crate::room::lan::LAN_PORT)).expect("hold the lan port");
+        let (events, _rx) = channel();
+        let room = Room::start(
+            Profile { name: "Me".to_string(), color: 1, limit: 5 },
+            "0.3.0".to_string(),
+            false,
+            Vec::new(),
+            events,
+        );
+        room.send(RoomCommand::Create);
+        assert!(wait_until(Instant::now() + Duration::from_secs(15), || room.state().phase != Phase::Idle));
+        assert_eq!(room.state().lan, Link::Unavailable);
+
+        drop(held);
+        room.send(RoomCommand::RetryLan);
+        assert!(
+            wait_until(Instant::now() + Duration::from_secs(15), || room.state().lan == Link::Ok),
             "lan stayed {:?}",
             room.state().lan
         );

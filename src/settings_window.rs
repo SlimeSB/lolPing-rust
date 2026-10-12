@@ -59,6 +59,7 @@ pub enum UiEvent {
     RoomMute { peer: String, on: bool },
     RoomCopyCode,
     RoomRetryInternet,
+    RoomRetryLan,
     RoomJoinClipboard,
     Quit,
     Closed,

@@ -278,6 +278,7 @@ impl App {
                 UiEvent::RoomMute { peer, on } => self.room_send(RoomCommand::Mute { peer, on }),
                 UiEvent::RoomCopyCode => self.copy_room_code(),
                 UiEvent::RoomRetryInternet => self.room_send(RoomCommand::RetryInternet),
+                UiEvent::RoomRetryLan => self.room_send(RoomCommand::RetryLan),
                 UiEvent::Quit => self.quitting = true,
                 UiEvent::Closed => closed = true,
             }

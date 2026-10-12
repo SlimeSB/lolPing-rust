@@ -389,6 +389,9 @@ fn in_room(app: &mut App, ui: &mut egui::Ui, t: &'static Strings, view: &RoomVie
         ui.group(|ui| {
             ui.colored_label(COLOR_WARN, t.room_lan_unavailable);
             ui.weak(t.room_lan_unavailable_desc);
+            if ui.button(t.room_retry).clicked() {
+                let _ = app.events.send(UiEvent::RoomRetryLan);
+            }
         });
     }
     if state.internet == Link::Unavailable {
