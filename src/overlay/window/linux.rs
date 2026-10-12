@@ -60,7 +60,7 @@ impl LayeredWindow {
             .map_err(|error| error.to_string())?;
         let state = intern_atom(&conn, b"_NET_WM_STATE");
         let above = intern_atom(&conn, b"_NET_WM_STATE_ABOVE");
-        let _ = conn.change_property32(PropMode::REPLACE, window, state, AtomEnum::ATOM, &[above.into()]);
+        let _ = conn.change_property32(PropMode::REPLACE, window, state, AtomEnum::ATOM, &[above]);
         let gc = conn.generate_id().map_err(|error| error.to_string())?;
         conn.create_gc(gc, window, &CreateGCAux::new().graphics_exposures(0))
             .map_err(|error| error.to_string())?;
@@ -161,7 +161,7 @@ impl Drop for LayeredWindow {
 
 /// The server wants the pixel word of a 32-bit visual, and little-endian puts its blue byte first.
 fn pack(rgba: &[u8], dst: &mut [u8]) {
-    for (index, pixel) in dst.chunks_exact_mut(4).enumerate() {
+    for (index, pixel) in dst.as_chunks_mut::<4>().0.iter_mut().enumerate() {
         let source = index * 4;
         pixel[0] = rgba[source + 2];
         pixel[1] = rgba[source + 1];

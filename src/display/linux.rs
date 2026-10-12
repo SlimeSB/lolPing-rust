@@ -42,7 +42,7 @@ pub fn displays() -> Vec<DisplayMap> {
             width: i32::from(info.width),
             height: i32::from(info.height),
         };
-        out.push(map(u32::from(crtc), rect, info.outputs.contains(&primary), scale));
+        out.push(map(crtc, rect, info.outputs.contains(&primary), scale));
     }
     if out.is_empty() {
         vec![map(0, whole, true, scale)]

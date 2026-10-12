@@ -150,7 +150,7 @@ fn answer(conn: &RustConnection, atoms: &Atoms, owned: Option<&str>, request: Se
         if request.property != NONE {
             let string: Atom = AtomEnum::STRING.into();
             if request.target == atoms.targets {
-                let list: [u32; 3] = [atoms.targets.into(), atoms.utf8.into(), string.into()];
+                let list: [u32; 3] = [atoms.targets, atoms.utf8, string];
                 let _ = conn.change_property32(PropMode::REPLACE, request.requestor, request.property, AtomEnum::ATOM, &list);
                 notify.property = request.property;
             } else if request.target == atoms.utf8 || request.target == string || request.target == atoms.text {
@@ -165,7 +165,7 @@ fn answer(conn: &RustConnection, atoms: &Atoms, owned: Option<&str>, request: Se
             }
         }
     }
-    let _ = conn.send_event(false, request.requestor, EventMask::NO_EVENT, &notify);
+    let _ = conn.send_event(false, request.requestor, EventMask::NO_EVENT, notify);
     let _ = conn.flush();
 }
 
