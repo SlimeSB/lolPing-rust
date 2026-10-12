@@ -8,7 +8,7 @@ use crate::emotes::{
     CUSTOM_NAME_MAX, MAX_CUSTOM_EMOTES,
 };
 use crate::i18n::{Lang, LanguagePref, LANG_ZH_CN, LANGUAGE_PREFS};
-use crate::keys::{vk_label, Hotkey, HOTKEY_PRIMARY_MODS, MOD_ALT, MOD_CTRL};
+use crate::keys::{vk_label, Hotkey, ALT_LABEL, CAPS_LABEL, CTRL_LABEL, HOTKEY_PRIMARY_MODS, MOD_ALT, MOD_CTRL, SHIFT_LABEL, WIN_LABEL};
 use crate::pings::{ping_by_id, DEFAULT_CLICK_PING, DEFAULT_WHEEL, WHEEL_SLOTS};
 use crate::room::code::{parse_room_code, ParsedRoomCode};
 use crate::room::colors::is_tag_color;
@@ -52,6 +52,11 @@ pub const KEYBOARD_TRIGGERS: [NamedTrigger; 4] = [
     NamedTrigger::Shift,
     NamedTrigger::Win,
 ];
+
+/// Caps Lock is only offered where the helper can keep its toggle from the OS, which macOS can't.
+pub const fn caps_lock_offered() -> bool {
+    !cfg!(target_os = "macos")
+}
 
 impl NamedTrigger {
     pub fn as_str(self) -> &'static str {
@@ -257,6 +262,9 @@ fn is_vk(v: &Value) -> Option<u32> {
 
 fn trigger_key(raw: Option<&Value>, fallback: TriggerKey) -> TriggerKey {
     if let Some(named) = raw.and_then(Value::as_str).and_then(NamedTrigger::parse) {
+        if named == NamedTrigger::Capslock && !caps_lock_offered() {
+            return fallback;
+        }
         return TriggerKey::Named(named);
     }
     if let Some(vk) = raw.and_then(Value::as_object).and_then(|o| o.get("vk")).and_then(is_vk) {
@@ -473,11 +481,11 @@ pub fn trigger_label(t: &TriggerKey, lang: Lang) -> String {
         TriggerKey::Vk { vk } => vk_label(*vk),
         TriggerKey::Named(NamedTrigger::Mouse4) => mouse_label(lang, 4),
         TriggerKey::Named(NamedTrigger::Mouse5) => mouse_label(lang, 5),
-        TriggerKey::Named(NamedTrigger::Alt) => "Alt".to_string(),
-        TriggerKey::Named(NamedTrigger::Ctrl) => "Ctrl".to_string(),
-        TriggerKey::Named(NamedTrigger::Shift) => "Shift".to_string(),
-        TriggerKey::Named(NamedTrigger::Win) => "Win".to_string(),
-        TriggerKey::Named(NamedTrigger::Capslock) => "Caps Lock".to_string(),
+        TriggerKey::Named(NamedTrigger::Alt) => ALT_LABEL.to_string(),
+        TriggerKey::Named(NamedTrigger::Ctrl) => CTRL_LABEL.to_string(),
+        TriggerKey::Named(NamedTrigger::Shift) => SHIFT_LABEL.to_string(),
+        TriggerKey::Named(NamedTrigger::Win) => WIN_LABEL.to_string(),
+        TriggerKey::Named(NamedTrigger::Capslock) => CAPS_LABEL.to_string(),
     }
 }
 
@@ -600,6 +608,14 @@ mod tests {
         assert_eq!(s.wheel, DEFAULT_WHEEL.to_vec());
         assert_eq!(s.click_ping_id, DEFAULT_CLICK_PING);
         assert_eq!(s.display_name, "Player");
+    }
+
+    #[test]
+    fn caps_lock_is_dropped_where_it_is_not_offered() {
+        let keyboard = if caps_lock_offered() { NamedTrigger::Capslock } else { NamedTrigger::Alt };
+        let emote = if caps_lock_offered() { NamedTrigger::Capslock } else { NamedTrigger::Ctrl };
+        assert_eq!(n(json!({ "trigger": "capslock" })).trigger, TriggerKey::Named(keyboard));
+        assert_eq!(n(json!({ "trigger": "alt", "emoteTrigger": "capslock" })).emote_trigger, EmoteTrigger::Key(TriggerKey::Named(emote)));
     }
 
     #[test]

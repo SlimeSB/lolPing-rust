@@ -20,7 +20,7 @@ pub fn main() {
     }
     // AppKit wants the tray and the event tap's windows on the main thread, so this thread keeps the app.
     let app = Box::into_raw(Box::new(App::new()));
-    let tick = Box::into_raw(Box::new(Tick { app, open_once: !hidden }));
+    let tick = Box::into_raw(Box::new(Tick { app, open_once: !hidden || !lolping::permissions::input_access() }));
     install_tick(tick.cast());
     settings_window::mac_run(unsafe { (*app).ui_sender() });
 }

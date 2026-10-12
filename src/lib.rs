@@ -10,6 +10,7 @@ pub mod input;
 pub mod keys;
 pub mod overlay;
 pub mod paths;
+pub mod permissions;
 pub mod pings;
 pub mod room;
 pub mod settings;

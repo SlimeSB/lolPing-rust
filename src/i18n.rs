@@ -84,6 +84,12 @@ strings_table! {
     status_on: &'static str,
     status_off: &'static str,
     status_failed_hint: &'static str,
+    perm_title: &'static str,
+    perm_steps: &'static str,
+    perm_stale_title: &'static str,
+    perm_stale_steps: &'static str,
+    perm_open: &'static str,
+    perm_retry: &'static str,
     restart_helper: &'static str,
     trigger_key: &'static str,
     trigger_key_desc: &'static str,
@@ -190,6 +196,7 @@ strings_table! {
     toast_on: &'static str,
     toast_off: &'static str,
     tray_tip_failed: &'static str,
+    tray_tip_no_access: &'static str,
     tray_enabled: &'static str,
     tray_restart: &'static str,
     tray_settings: &'static str,
@@ -458,6 +465,12 @@ static EN: Strings = Strings {
     status_on: "Pinging is on",
     status_off: "Pinging is off",
     status_failed_hint: "Mouse and keyboard input can’t be read right now.",
+    perm_title: "lolPing needs Accessibility access",
+    perm_steps: "Click Open System Settings.\nTurn on lolPing under Privacy & Security → Accessibility.\nAlready on after an update? Select lolPing, remove it with –, and turn it on again.",
+    perm_stale_title: "Turn Accessibility access on again",
+    perm_stale_steps: "macOS forgets the permission each time lolPing is updated.\nIn Privacy & Security → Accessibility, select lolPing and remove it with –.\nClick Open System Settings, turn lolPing on again, then click Try again.",
+    perm_open: "Open System Settings",
+    perm_retry: "Try again",
     restart_helper: "Restart helper",
     trigger_key: "Trigger key",
     trigger_key_desc: "Hold this, then drag with the left mouse button to open the wheel",
@@ -564,6 +577,7 @@ static EN: Strings = Strings {
     toast_on: "Pings on",
     toast_off: "Pings off",
     tray_tip_failed: "lolPing: input helper stopped",
+    tray_tip_no_access: "lolPing: needs Accessibility access",
     tray_enabled: "Enabled",
     tray_restart: "Restart input helper",
     tray_settings: "Settings…",
@@ -598,6 +612,12 @@ static ZH: Strings = Strings {
     status_on: "信号已开启",
     status_off: "信号已关闭",
     status_failed_hint: "目前无法读取鼠标和键盘输入。",
+    perm_title: "lolPing 需要辅助功能授权",
+    perm_steps: "点击「打开系统设置」。\n在「隐私与安全性 → 辅助功能」里打开 lolPing。\n更新后已经是打开的？选中 lolPing，用 – 移除后再打开一次。",
+    perm_stale_title: "请重新开启辅助功能授权",
+    perm_stale_steps: "每次更新后 macOS 都会忘记这项授权。\n在「隐私与安全性 → 辅助功能」里选中 lolPing，用 – 移除。\n点击「打开系统设置」重新打开 lolPing，然后点「重试」。",
+    perm_open: "打开系统设置",
+    perm_retry: "重试",
     restart_helper: "重启助手",
     trigger_key: "触发键",
     trigger_key_desc: "按住此键，再用鼠标左键拖动以打开轮盘",
@@ -704,6 +724,7 @@ static ZH: Strings = Strings {
     toast_on: "信号已开启",
     toast_off: "信号已关闭",
     tray_tip_failed: "lolPing：输入助手已停止",
+    tray_tip_no_access: "lolPing：需要辅助功能授权",
     tray_enabled: "已开启",
     tray_restart: "重启输入助手",
     tray_settings: "设置…",
@@ -736,8 +757,8 @@ mod tests {
 
     #[test]
     fn key_count_matches_reference() {
-        // The reference table has 217 keys: 28 are methods here, and 52 are gone (11 macOS-only, 27 updater, 14 unused).
-        assert_eq!(Strings::FIELD_COUNT + 28, 217 - 52);
+        // The reference table has 217 keys: 28 are methods here, and 45 are gone (4 macOS-only, 27 updater, 14 unused).
+        assert_eq!(Strings::FIELD_COUNT + 28, 217 - 45);
     }
 
     #[test]

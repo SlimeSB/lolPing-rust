@@ -1,5 +1,5 @@
 use std::sync::mpsc::{Receiver, Sender};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde_json::{Map, Value};
 #[cfg(windows)]
@@ -18,6 +18,7 @@ use crate::keys;
 use crate::overlay::scene::{Tag, Visuals, WheelKind};
 use crate::overlay::{self, Command, Event as OverlayEvent};
 use crate::paths::AppPaths;
+use crate::permissions;
 use crate::pings;
 use crate::room::code::{self, ParsedRoomCode};
 use crate::room::manager::{self, Profile, Room, RoomCommand, RoomEvent, RoomState};
@@ -29,6 +30,9 @@ use crate::tray::{Tray, TrayCommand, TrayMode, TrayRoom};
 
 /// The owner key of this machine's own emote on an overlay.
 const SELF: &str = "self";
+
+/// How often macOS is asked whether input access has been granted.
+const ACCESS_POLL: Duration = Duration::from_millis(1500);
 
 pub struct App {
     paths: AppPaths,
@@ -45,6 +49,8 @@ pub struct App {
     hook: Option<HookHandle>,
     hook_tx: Sender<Emit>,
     hook_events: Receiver<Emit>,
+    access_denied: bool,
+    next_access_check: Instant,
     audio: Option<Audio>,
     tray: Option<Tray>,
     window: Option<SettingsWindow>,
@@ -78,7 +84,8 @@ impl App {
         let (overlay_tx, overlay_events) = std::sync::mpsc::channel();
         let overlay = overlay::Overlay::start(paths.overlay(), overlay_tx).expect("overlay windows");
         let (hook_tx, hook_events) = std::sync::mpsc::channel();
-        let hook = spawn_hook(&settings, settings.enabled_on_start, hook_tx.clone());
+        let access_denied = !permissions::input_access();
+        let hook = if access_denied { None } else { spawn_hook(&settings, settings.enabled_on_start, hook_tx.clone()) };
         let audio = Audio::new(&paths.sounds, &paths.bundled_emotes);
         let tray = Tray::new(&paths.textures.join("generic_ping.png"), i18n::strings(lang));
         let (ui_tx, ui_events) = std::sync::mpsc::channel();
@@ -104,6 +111,8 @@ impl App {
             hook,
             hook_tx,
             hook_events,
+            access_denied,
+            next_access_check: Instant::now(),
             audio,
             tray,
             window: None,
@@ -145,6 +154,7 @@ impl App {
 
     pub fn tick(&mut self) {
         self.poll_hook();
+        self.poll_access();
         self.poll_overlay();
         self.poll_room();
         self.poll_window();
@@ -275,6 +285,7 @@ impl App {
                 UiEvent::PreviewEmote(reference) => self.preview_emote(&reference),
                 UiEvent::Capturing(on) => self.set_capturing(on),
                 UiEvent::RetryHelper => self.restart_hook(),
+                UiEvent::OpenAccessibility => self.open_accessibility(),
                 UiEvent::ToggleEnabled(on) => self.set_enabled(on),
                 UiEvent::RoomCreate => self.room_send(RoomCommand::Create),
                 UiEvent::RoomJoin(text) => self.join_room(&text),
@@ -569,6 +580,38 @@ impl App {
         self.push_status();
     }
 
+    /// The helper reads input only where the OS allows it, and macOS waits for the grant before it starts.
+    fn helper_state(&self) -> HelperState {
+        if self.hook.is_some() {
+            return HelperState::Running;
+        }
+        if self.access_denied || permissions::GATED && permissions::input_access() {
+            return HelperState::NoAccess { stale: !self.access_denied };
+        }
+        HelperState::Failed
+    }
+
+    /// macOS: start the helper as soon as the user grants input access.
+    fn poll_access(&mut self) {
+        if self.quitting || self.hook.is_some() || !self.access_denied {
+            return;
+        }
+        if Instant::now() < self.next_access_check {
+            return;
+        }
+        self.next_access_check = Instant::now() + ACCESS_POLL;
+        if permissions::input_access() {
+            self.access_denied = false;
+            self.restart_hook();
+        }
+    }
+
+    /// Asks for input access and opens the page where it is granted: macOS only lists the app once it asks.
+    fn open_accessibility(&mut self) {
+        permissions::request_input_access();
+        permissions::open_input_settings();
+    }
+
     fn import_emote(&mut self, bytes: &[u8], file_name: &str) {
         let file = match library::prepare_emote(bytes, file_name) {
             Ok(file) => file,
@@ -719,7 +762,7 @@ impl App {
     fn status(&self) -> Status {
         Status {
             enabled: self.enabled,
-            helper: if self.hook.is_some() { HelperState::Running } else { HelperState::Failed },
+            helper: self.helper_state(),
             first_run: self.store.first_run,
             problems: self.problems(),
         }
@@ -738,14 +781,13 @@ impl App {
     }
 
     fn push_status(&mut self) {
+        let mode = match self.helper_state() {
+            HelperState::NoAccess { .. } => TrayMode::NoAccess,
+            HelperState::Failed => TrayMode::Failed,
+            HelperState::Running if self.enabled => TrayMode::On,
+            HelperState::Running => TrayMode::Off,
+        };
         if let Some(tray) = &mut self.tray {
-            let mode = if self.hook.is_none() {
-                TrayMode::Failed
-            } else if self.enabled {
-                TrayMode::On
-            } else {
-                TrayMode::Off
-            };
             tray.set_status(mode, self.enabled);
         }
         if let Some(window) = &self.window {

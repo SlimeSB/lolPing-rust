@@ -93,11 +93,21 @@ fn status_card(app: &mut App, ui: &mut egui::Ui, t: &'static Strings) {
     let hotkey = hotkey_label(app.settings.toggle_hotkey);
     let (title, hint) = match helper {
         HelperState::Failed => (t.status_helper_stopped, t.status_failed_hint.to_string()),
+        HelperState::NoAccess { stale: false } => (t.perm_title, t.perm_steps.to_string()),
+        HelperState::NoAccess { stale: true } => (t.perm_stale_title, t.perm_stale_steps.to_string()),
         HelperState::Running => (if enabled { t.status_on } else { t.status_off }, t.status_hint(&trigger, &hotkey, enabled)),
     };
     row(ui, title, Some(hint.as_str()), |ui| match helper {
         HelperState::Failed => {
             if ui.button(t.restart_helper).clicked() {
+                let _ = app.events.send(UiEvent::RetryHelper);
+            }
+        }
+        HelperState::NoAccess { stale } => {
+            if ui.button(t.perm_open).clicked() {
+                let _ = app.events.send(UiEvent::OpenAccessibility);
+            }
+            if stale && ui.button(t.perm_retry).clicked() {
                 let _ = app.events.send(UiEvent::RetryHelper);
             }
         }

@@ -24,6 +24,7 @@ pub enum TrayMode {
     On,
     Off,
     Failed,
+    NoAccess,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -150,13 +151,13 @@ impl Tray {
 
     fn render(&mut self) {
         let t = self.text;
-        let failed = self.mode == TrayMode::Failed;
+        let failed = matches!(self.mode, TrayMode::Failed | TrayMode::NoAccess);
         let icon = if failed { &self.icons.failed } else if self.mode == TrayMode::On { &self.icons.on } else { &self.icons.off };
         let _ = self.icon.set_icon(Some(icon.clone()));
-        let tooltip = if failed {
-            t.tray_tip_failed.to_string()
-        } else {
-            t.tray_tip(self.enabled)
+        let tooltip = match self.mode {
+            TrayMode::NoAccess => t.tray_tip_no_access.to_string(),
+            TrayMode::Failed => t.tray_tip_failed.to_string(),
+            _ => t.tray_tip(self.enabled),
         };
         let _ = self.icon.set_tooltip(Some(tooltip));
 

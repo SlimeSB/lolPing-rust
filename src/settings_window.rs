@@ -21,6 +21,8 @@ use crate::settings::model::{self, patch_clashes, EmoteTrigger, Settings};
 pub enum HelperState {
     Running,
     Failed,
+    /// Input access is missing; `stale` means the OS says it is granted, yet the helper still can't read input.
+    NoAccess { stale: bool },
 }
 
 #[derive(Clone, Debug)]
@@ -54,6 +56,7 @@ pub enum UiEvent {
     PreviewEmote(String),
     Capturing(bool),
     RetryHelper,
+    OpenAccessibility,
     ToggleEnabled(bool),
     RoomCreate,
     RoomJoin(String),

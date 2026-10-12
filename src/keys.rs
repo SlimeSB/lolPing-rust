@@ -74,10 +74,35 @@ fn single_digit(s: &str) -> Option<u32> {
     }
 }
 
+#[cfg(target_os = "macos")]
+pub const CTRL_LABEL: &str = "⌃ Control";
+#[cfg(not(target_os = "macos"))]
+pub const CTRL_LABEL: &str = "Ctrl";
+
+#[cfg(target_os = "macos")]
+pub const ALT_LABEL: &str = "⌥ Option";
+#[cfg(not(target_os = "macos"))]
+pub const ALT_LABEL: &str = "Alt";
+
+#[cfg(target_os = "macos")]
+pub const SHIFT_LABEL: &str = "⇧ Shift";
+#[cfg(not(target_os = "macos"))]
+pub const SHIFT_LABEL: &str = "Shift";
+
+#[cfg(target_os = "macos")]
+pub const WIN_LABEL: &str = "⌘ Command";
+#[cfg(not(target_os = "macos"))]
+pub const WIN_LABEL: &str = "Win";
+
+#[cfg(target_os = "macos")]
+pub const CAPS_LABEL: &str = "⇪ Caps Lock";
+#[cfg(not(target_os = "macos"))]
+pub const CAPS_LABEL: &str = "Caps Lock";
+
 const VK_LABELS: &[(u32, &str)] = &[
     (0x20, "Space"), (0x0d, "Enter"), (0x09, "Tab"), (0x08, "Backspace"), (0x1b, "Esc"),
     (0x2d, "Insert"), (0x2e, "Delete"), (0x24, "Home"), (0x23, "End"), (0x21, "Page Up"),
-    (0x22, "Page Down"), (0x25, "←"), (0x26, "↑"), (0x27, "→"), (0x28, "↓"), (0x14, "Caps Lock"),
+    (0x22, "Page Down"), (0x25, "←"), (0x26, "↑"), (0x27, "→"), (0x28, "↓"), (0x14, CAPS_LABEL),
     (0x13, "Pause"), (0x91, "Scroll Lock"), (0x2c, "Print Screen"), (0x5d, "Menu"), (0xc0, "`"),
     (0xbd, "-"), (0xbb, "="), (0xdb, "["), (0xdd, "]"), (0xdc, "\\"), (0xba, ";"), (0xde, "'"),
     (0xbc, ","), (0xbe, "."), (0xbf, "/"), (0x6a, "Num *"), (0x6b, "Num +"), (0x6d, "Num -"),
@@ -100,11 +125,7 @@ pub fn vk_label(vk: u32) -> String {
     }
 }
 
-#[cfg(target_os = "macos")]
-const MOD_LABELS: [&str; 4] = ["Control", "Option", "Shift", "Command"];
-
-#[cfg(not(target_os = "macos"))]
-const MOD_LABELS: [&str; 4] = ["Ctrl", "Alt", "Shift", "Win"];
+const MOD_LABELS: [&str; 4] = [CTRL_LABEL, ALT_LABEL, SHIFT_LABEL, WIN_LABEL];
 
 pub fn mod_labels(mods: u32) -> Vec<&'static str> {
     let mut out = Vec::new();
