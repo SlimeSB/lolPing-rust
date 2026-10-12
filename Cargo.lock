@@ -2589,6 +2589,7 @@ dependencies = [
  "base64",
  "eframe",
  "getrandom 0.4.3",
+ "gtk",
  "hex",
  "hkdf",
  "image",

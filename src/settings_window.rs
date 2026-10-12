@@ -129,7 +129,13 @@ fn host_loop(requests: Receiver<Request>) {
                 .with_min_inner_size([560.0, 420.0]),
             // winit refuses an event loop off the main thread unless this is set.
             event_loop_builder: Some(Box::new(|builder| {
+                #[cfg(windows)]
                 winit::platform::windows::EventLoopBuilderExtWindows::with_any_thread(builder, true);
+                #[cfg(target_os = "linux")]
+                {
+                    winit::platform::x11::EventLoopBuilderExtX11::with_any_thread(builder, true);
+                    winit::platform::wayland::EventLoopBuilderExtWayland::with_any_thread(builder, true);
+                }
             })),
             ..Default::default()
         };
