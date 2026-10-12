@@ -134,6 +134,6 @@ The icons in `assets/textures` and the sounds in `assets/sounds` come from a loc
 
 ## License
 
-The code is under the [MIT license](LICENSE). The ping and emote icons, animations and sounds are © Riot Games and aren't covered by it. If you represent Riot Games and want something removed, please open an issue.
+The code is under the [MIT license](LICENSE). The ping and emote icons, animations and sounds are © Riot Games and aren't covered by it, as [assets/LICENSE.txt](assets/LICENSE.txt) spells out. If you represent Riot Games and want something removed, please open an issue.
 
 lolPing isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.

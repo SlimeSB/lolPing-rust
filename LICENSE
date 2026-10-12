@@ -20,14 +20,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-This license covers lolPing's source code only. The ping icons in
-assets/textures, the sounds in assets/sounds and the emote animations, icons
-and sounds in assets/emotes are © Riot Games, Inc., extracted from League of
-Legends, and are not licensed under the MIT License.
-lolPing isn't endorsed by Riot Games and doesn't reflect the views or opinions
-of Riot Games or anyone officially involved in producing or managing Riot Games
-properties. Riot Games, and all associated properties are trademarks or
-registered trademarks of Riot Games, Inc.

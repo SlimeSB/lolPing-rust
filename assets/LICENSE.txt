@@ -1,0 +1,11 @@
+The files in this folder are not covered by the MIT license in the repository
+root.
+
+The ping icons in textures, the sounds in sounds and the emote animations,
+icons and sounds in emotes are © Riot Games, Inc., extracted from League of
+Legends, and are not licensed under the MIT License.
+
+lolPing isn't endorsed by Riot Games and doesn't reflect the views or opinions
+of Riot Games or anyone officially involved in producing or managing Riot Games
+properties. Riot Games, and all associated properties are trademarks or
+registered trademarks of Riot Games, Inc.
