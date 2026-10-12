@@ -1,9 +1,10 @@
 name: Release
 
-# Push a tag that matches Cargo.toml's version (for example v0.5.1) to build both packages and publish them.
+# Push a tag that matches Cargo.toml's version (for example v0.5.2) to build both packages and publish them.
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -28,11 +29,11 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: Check the tag against Cargo.toml
+      - name: Read the version, and check it against the tag
         shell: bash
         run: |
           version=$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2)
-          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+          if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "v$version" != "$GITHUB_REF_NAME" ]; then
             echo "Cargo.toml says $version, the tag is $GITHUB_REF_NAME"
             exit 1
           fi
@@ -65,6 +66,7 @@ jobs:
           if-no-files-found: error
   release:
     needs: package
+    if: github.event_name == 'push'
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/download-artifact@v4
