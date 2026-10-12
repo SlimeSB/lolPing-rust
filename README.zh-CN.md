@@ -5,20 +5,18 @@
 </p>
 
 <p align="center">
-  把英雄联盟的信号和表情搬到整个桌面，支持 Windows 和 macOS。<br>
-  按住 <b>Alt</b>（Mac 上是 <b>⌥ Option</b>）拖动，在想要的信号上松开：动画弹出、音效响起，任何程序之上、任何显示器上都可以。<br>
-  按住 <b>Ctrl</b>（Mac 上是 <b>⌃ Control</b>）拖动打开表情轮盘：英雄联盟的表情，或你自己的图片。
+  把英雄联盟的信号和表情搬到整个桌面，支持 Windows。<br>
+  按住 <b>Alt</b> 拖动，在想要的信号上松开：动画弹出、音效响起，任何程序之上、任何显示器上都可以。<br>
+  按住 <b>Ctrl</b> 拖动打开表情轮盘：英雄联盟的表情，或你自己的图片。
 </p>
 
 <p align="center">
-  <a href="https://github.com/darrenprx/lolPing/releases/latest"><b>下载 Windows 版</b></a> ·
-  <a href="https://github.com/darrenprx/lolPing/releases/latest"><b>下载 Mac 版</b></a>（Apple 芯片，实验性）
+  <a href="https://github.com/SlimeSB/lolPing-rust/releases/latest"><b>下载 Windows 版</b></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/darrenprx/lolPing/actions/workflows/ci.yml"><img src="https://github.com/darrenprx/lolPing/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/darrenprx/lolPing/releases/latest"><img src="https://img.shields.io/github/v/release/darrenprx/lolPing" alt="最新版本"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/darrenprx/lolPing" alt="MIT 许可证"></a>
+  <a href="https://github.com/SlimeSB/lolPing-rust/releases/latest"><img src="https://img.shields.io/github/v/release/SlimeSB/lolPing-rust" alt="最新版本"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/SlimeSB/lolPing-rust" alt="MIT 许可证"></a>
 </p>
 
 <p align="center"><img src="docs/media/demo.zh-CN.gif" width="880" alt="一个程序卡死弹出“未响应”对话框，信号轮盘在上面连发三个“敌人消失”信号"></p>
@@ -27,29 +25,13 @@
 
 ## 安装
 
-### Windows
+lolPing 由 `lolPing.exe` 和它在运行时读取的 `assets` 文件夹组成。两者要放在一起：分发出去的副本从 exe 旁边的 `assets` 里加载图标、音效和表情。
 
-1. 从[最新版本](https://github.com/darrenprx/lolPing/releases/latest)下载 `lolPing-Setup-<版本号>.exe`。
-2. 运行安装程序。安装程序没有代码签名，Windows SmartScreen 可能会提示“Windows 已保护你的电脑”：点击**更多信息**，再点**仍要运行**。
-3. lolPing 会打开设置窗口并常驻系统托盘。按住 Alt 在任意位置拖动即可发信号。
+1. 从[最新版本](https://github.com/SlimeSB/lolPing-rust/releases/latest)获取 `lolPing.exe` 和 `assets`，或者自己构建（见[从源码构建](#从源码构建)）。
+2. 运行 `lolPing.exe`。它会打开设置窗口并常驻系统托盘。
+3. 按住 Alt 在任意位置拖动即可发信号。
 
-lolPing 面向 64 位 Windows 11。Windows 10 也许可以用，但没有测试过。
-
-### macOS（实验性）
-
-Mac 版需要 Apple 芯片（M1 或更新）的 Mac 和 macOS 12 或更新版本。它会自动构建和测试，但还没在真实的 Mac 上用过多少。遇到问题请[反馈](https://github.com/darrenprx/lolPing/issues)。
-
-1. 从[最新版本](https://github.com/darrenprx/lolPing/releases/latest)下载 `lolPing-<版本号>-arm64.dmg`，打开后把 lolPing 拖进“应用程序”。
-2. 打开 lolPing。它没有经过注册 Apple 开发者的签名，macOS 会提示无法检查其是否包含恶意软件：点“完成”，打开**系统设置 → 隐私与安全性**，向下滚动，在 lolPing 的提示旁点**仍要打开**并确认。
-   如果 macOS 提示 lolPing“已损坏”，请在“终端”中运行 `xattr -dr com.apple.quarantine /Applications/lolPing.app`，然后再次打开。
-3. lolPing 会请求**辅助功能**权限，用来读取鼠标和键盘。点“打开系统设置”并打开 lolPing。授权后立即可以发信号。
-4. lolPing 常驻菜单栏。按住 ⌥ Option 在任意位置拖动即可发信号。
-
-**每次更新后**，macOS 都会忘记辅助功能权限，因为应用没有固定的开发者签名。在**隐私与安全性 → 辅助功能**中选中 lolPing，点 **–** 移除，再重新打开。设置窗口会一步步提示你。
-
-### 升级旧版本
-
-从 v0.4 或更早的版本更新：请手动下载一次新版本。从 v0.5 起，lolPing 会自己更新（见[更新](#更新)）。
+exe 面向 64 位 Windows 构建。程序已在运行时再次启动，只会打开当前那个副本的设置窗口。
 
 ## 使用
 
@@ -59,10 +41,9 @@ Mac 版需要 Apple 芯片（M1 或更新）的 Mac 和 macOS 12 或更新版本
 | 发表情 | 按住 **Ctrl** 拖动，在某个表情上松开 |
 | 取消 | 在中心松开、点右键，或按 **Esc** |
 | 暂停 / 恢复 | **Ctrl + Alt + P** |
-| 打开设置 | 单击托盘图标 |
-| 退出，或重启输入助手 | 右键托盘图标 |
-
-在 Mac 上：用 **⌥ Option** 代替 Alt，用 **⌃ Control** 代替 Ctrl 发表情，用 **⌃⌥P** 暂停，用菜单栏中的信号图标代替托盘图标。
+| 打开设置 | 单击托盘图标，或右键托盘图标后选择**设置…** |
+| 退出 | 右键托盘图标，选择**退出 lolPing** |
+| 重启输入助手 | 右键托盘图标，选择**重启输入助手**，仅在助手停止后才会出现 |
 
 轮盘从正上方开始顺时针依次是：危险（撤退）、推进、正在赶来、全力进攻（All In）、请求协助、需要视野、敌人消失、敌方视野。可以在设置中重新排列，或换上诱饵、视野已清除。表情轮盘同样有 8 个扇区，要放哪些表情在设置中选择。
 
@@ -70,96 +51,85 @@ Mac 版需要 Apple 芯片（M1 或更新）的 Mac 和 macOS 12 或更新版本
 
 <img src="docs/media/settings.zh-CN.png" width="760" alt="lolPing 设置窗口，包含触发、开关、信号与声音、轮盘、表情、房间和应用几个部分">
 
-- **触发键：** Alt、Ctrl、Shift、Win、Caps Lock、鼠标侧键 4/5，或任意其他按键（Mac 上：Option、Control、Shift、Command、鼠标侧键 4/5，或任意其他按键）。开启信号时，自定义按键在其他程序里不会再输入字符。
-- **Alt + 单击发送信号：** 默认关闭，这样平时的 Alt + 单击快捷操作不受影响。发送的是轮盘编辑器中心的信号（默认是普通信号）。
-- **开关快捷键：** 必须包含 Ctrl、Alt 或 Win（Mac 上为 ⌃、⌥ 或 ⌘）。
-- **信号与声音：** 大小、持续时间、音量、静音、轮盘提示音。
-- **轮盘：** 把任意信号（包括诱饵和视野已清除）拖到任意扇区，或拖到中心设为 Alt + 单击发送的信号。单击信号可预览。**恢复默认**会还原英雄联盟的布局。
-- **表情：** 表情键（默认 Ctrl，也可以关闭）、**Ctrl + 单击发送表情**（默认关闭）、表情大小、表情音效，以及表情轮盘（编辑方式和信号轮盘相同）。点**添加图片…**，或把文件拖到列表上，可以加入自己的图片：PNG、JPG、GIF 或 WebP，最多 24 张。动图只在你自己的屏幕上播放。
-- **开机启动**（Mac 上为**登录时打开**）：启动后隐藏在托盘或菜单栏中。
-- **语言：** 默认跟随系统显示语言，也可以手动选择 English 或简体中文。
+- **触发键：** 默认 Alt。还可以选 Ctrl、Shift、Win、Caps Lock、鼠标侧键 4、鼠标侧键 5，或任意其他按键。使用自定义按键时，lolPing 开启期间该键不会在其他程序中输入字符。
+- **拖动距离：** 鼠标移动多远后才打开轮盘（2 到 40 像素，默认 8）。
+- **Alt + 单击发送信号：** 默认关闭，这样平时的 Alt + 单击快捷操作不受影响。发送的是轮盘中心的信号（默认是普通信号）。
+- **开关快捷键：** 默认 Ctrl + Alt + P，必须包含 Ctrl、Alt 或 Win。
+- **启动时开启：** 启动 lolPing 时信号处于开启状态。
+- **信号与声音：** 信号大小（60 到 220 像素）、信号在屏幕上停留多久（1 到 8 秒）、音量、静音，以及轮盘提示音。
+- **轮盘：** 为 8 个扇区各选一个信号，再为中心选一个，也就是 Alt + 单击发送的信号。单击**全部信号**里的信号可以预览。**恢复默认**会还原英雄联盟的布局。
+- **表情：** 表情键（默认 Ctrl，也可以关闭）、**Ctrl + 单击发送表情**（默认关闭）、表情大小、表情音效，以及 8 个扇区的表情轮盘（编辑方式和信号轮盘相同）。点**添加图片…**，或把图片拖到窗口上，可以加入自己的图片：PNG、JPG、GIF 或 WebP，最大 8 MB、最长边不超过 8192 像素（动图最大 5 MB、最长边不超过 1024 像素），最多 24 张。动图在你自己这里正常播放；朋友看不到你导入的图片。
+- **房间：** 你的名字和名字颜色、**房间静音**、接收信号和表情上限、**允许互联网连接**、**启动时重新加入上次的房间**，以及信号可以落在哪些显示器上。
+- **应用：** **开机启动**（启动后隐藏在托盘中）、**语言**（跟随 Windows、English 或简体中文）。
+- **关于：** 版本号、缺失或出问题的地方，以及已知限制。
 
-设置在 Windows 上保存在 `%APPDATA%\lolPing\settings.json`，在 Mac 上保存在 `~/Library/Application Support/lolPing/settings.json`。
-
-## 更新
-
-lolPing 在启动 10 秒后向 GitHub 检查一次新版本，之后每 6 小时检查一次。有新版本时，屏幕上会出现提示，托盘菜单和**设置 → 应用 → 关于**里也会出现**更新**。更新前会先询问：在你点击之前不会下载任何内容。
-
-- **Windows：** 点一下即可下载安装程序、校验、静默安装到原来的文件夹，并重启 lolPing。重启后会打开设置窗口。
-- **Mac：** lolPing 把磁盘映像下载到“下载”文件夹，校验后先说明接下来的步骤，再打开它，然后退出。请把 lolPing 拖进“应用程序”，选择**替换**，打开它，并再次允许辅助功能。
-- 托盘菜单或**设置 → 应用 → 关于**中的**检查更新**会立即检查。从托盘菜单检查时，结果（已是最新版本，或出错的原因）会以屏幕通知的形式显示。
-- **自动检查更新**（设置 → 应用，默认开启）控制定时检查。关闭后，只有在你点击**检查更新**或**更新**时，lolPing 才会联系 GitHub。
-- **隐私：** 每次检查都会让 GitHub 知道你的 IP 地址和 lolPing 的版本号，别的都不会发送。
+设置在 `%APPDATA%\lolPing\settings.json` 中，导入的图片在 `%APPDATA%\lolPing\emotes` 中。
 
 ## 和朋友一起发信号（房间）
 
-加入房间后，房间里的每个人都会在自己的屏幕上看到你的信号：位置相同（按各自的分辨率换算），下面带着你的名字。他们的信号也会出现在你的屏幕上。Windows 和 Mac 之间可以互通。
+加入房间后，房间里的每个人都会在自己的屏幕上看到你的信号：位置相同（按各自的分辨率换算），下面带着你的名字。他们的信号也会出现在你的屏幕上。
 
-1. 一个人打开**设置 → 房间**（或托盘菜单 → **房间**），点击**创建房间**。
+1. 一个人打开**设置 → 房间**（或右键托盘图标 → **房间**），点击**创建房间**。
 2. 复制房间码（例如 `PING-7KQ4M-2HXTR`）发给朋友。
-3. 朋友复制房间码后，在托盘菜单中点击**从剪贴板加入**，或粘贴到房间页面后点击**加入**。
+3. 朋友把它粘贴到房间页面后点击**加入**，或右键托盘图标后点击**从剪贴板加入**。
 
-- **同一网络：** 第一次使用时，Windows 会询问是否允许 lolPing 使用网络：请允许，并把 Wi‑Fi 设置为**专用网络**（公用网络会被 Windows 阻止）。Mac 会询问是否允许查找本地网络中的设备。
-- **不同网络：** 打开**允许互联网连接**（默认开启）后，任何地方的朋友都能用同一个房间码加入。信号通过免费的公共 [Nostr](https://nostr.com) 中继传输，比局域网稍慢一点；能走局域网时仍会优先使用局域网。ZeroTier、Radmin VPN 等虚拟局域网同样可用，Tailscale 用户则会直接通过互联网连接。
+- **同一网络：** 第一次使用时，Windows 会询问是否允许 lolPing 使用网络：请允许，并把 Wi‑Fi 设置为**专用网络**。如果 lolPing 打不开 UDP 端口 47474，房间页面会提示。
+- **不同网络：** 打开**允许互联网连接**（默认开启）后，任何地方的朋友都能用同一个房间码加入。信号通过免费的公共 [Nostr](https://nostr.com) 中继传输，比局域网稍慢一点；能走局域网时仍会优先使用局域网。
 - 信号会显示在编号相同的显示器上（1 号是主显示器），没有则显示在 1 号上。
-- **表情**和信号一样发给房间：朋友会在自己的屏幕上看到，下面带着你的名字。你自己的图片目前在朋友那里显示为“?”。还在用 v0.4 或更早版本的朋友看不到表情，房间页面会在他们的名字下面提示。
-- **房间静音**、单独静音某个人，以及**接收信号和表情上限**（可选不限，两者合并计算）可以控制刷屏。用快捷键暂停 lolPing 时，房间里的信号和表情也会一起暂停。
+- **表情**和信号一样发给房间：朋友会在自己的屏幕上看到，下面带着你的名字。你导入的图片在他们那里显示为占位图形。版本低于 0.5.0 的朋友看不到表情，房间页面会在他们的名字下面提示。
+- **房间静音**、单独静音某个人，以及**接收信号和表情上限**（最高为“不限”，信号和表情合并计算）可以控制刷屏。用快捷键暂停 lolPing 时，房间里的信号和表情也会一起暂停。
 - 一个房间最多 8 人。想踢掉某人，就离开并创建一个新房间。
-- **隐私：** 信号、表情和名字使用由房间码生成的密钥进行端到端加密。同一网络中的人可以看到你的本地 IP 地址。开启互联网连接后，公共中继可以看到你的 IP 地址、匿名房间 ID 和发送时间，但永远看不到你的信号、表情和名字。关闭**允许互联网连接**即可只在局域网中使用。
+- **隐私：** 信号、表情和名字使用由房间码生成的密钥进行端到端加密。同一网络中的人可以看到你的本地 IP 地址。开启互联网连接后，公共中继可以看到你的 IP 地址、匿名房间 ID 和发送时间，但永远看不到你的信号、表情和名字。
 
 ## 已知限制
 
 - 在以管理员身份运行的窗口（例如任务管理器）上无法打开轮盘，因为 Windows 不会把这些窗口的输入交给普通程序。
 - 独占全屏的游戏会盖住信号层。
 - 只共享单个窗口时看不到信号，请改为共享整个屏幕。
-- 开启 lolPing 后，Ctrl + 拖动会打开表情轮盘，而不是复制文件或文字。可以在**设置 → 表情**中换一个表情键，或者把它关掉。
-- 在 Mac 上，登录窗口或密码提示等安全界面出现时无法打开轮盘；每次更新后需要重新允许辅助功能权限。
+- 开启 lolPing 后，Ctrl + 拖动（默认的表情键）会打开表情轮盘，而不是复制文件或文字。可以在**设置 → 表情**中换一个表情键，或者把它关掉。
 
 ## 从源码构建
 
-需要 Node 22.12 或更新版本，以及：
-
-- **Windows：** Windows 11，以及安装了“使用 C++ 的桌面开发”工作负载的 Visual Studio 2022 或更新版本。
-- **macOS：** 装有 Xcode 命令行工具（`xcode-select --install`）的 Apple 芯片 Mac。请为运行 `npm run dev` 的程序（例如“终端”）开启辅助功能权限，输入助手才能读取输入。
+需要 [Rust 工具链](https://rustup.rs)（stable，edition 2021），以及 Visual Studio Build Tools 中“使用 C++ 的桌面开发”工作负载提供的 MSVC 链接器。`.cargo/config.toml` 会静态链接 C 运行时，所以生成的 exe 在没装 VC++ 运行库的机器上也能运行。
 
 ```bash
-npm install
-npx install-electron
-npm run build:helper
-npm run dev
+cargo build --release
 ```
 
-`npx install-electron` 会下载 `npm run dev` 所需的 Electron 程序。
+程序在 `target/release/lolPing.exe`。想一步完成构建并运行：
+
+```bash
+cargo run
+```
+
+`cargo run` 在任何目录下都能用：程序会先找 exe 旁边的 `assets`，找不到就回退到源码树里的 `assets`。交给别人的副本需要把 `assets` 放在 `lolPing.exe` 旁边。`build.rs` 会把 `build/icon.ico` 和版本信息写进 exe。
 
 | 命令 | 作用 |
 | --- | --- |
-| `npm test` | TypeScript 测试，包括以 `--simulate` 模式运行真实输入助手的协议测试 |
-| `npm run test:helper` | 构建输入助手并运行 C++ 测试 |
-| `npm run typecheck` | 全量类型检查 |
-| `npm run dist` | 在 `release/` 中生成 Windows 安装程序 |
-| `npm run dist:mac` | 在 `release/` 中生成 Mac 磁盘映像（需在 Mac 上运行） |
-| `npm run dev:site` | 启动轮盘的浏览器演示页（`site/`） |
-| `npm run media` | 用演示页重新录制 `docs/media/demo.gif` 和 `docs/media/og.png`（需要 ffmpeg） |
-| `node tools/room-peer/run.mjs <房间码>` | 以假成员身份加入房间并随机发信号，一台电脑也能试用房间功能；加 `--relay` 则通过中继加入，加 `--emotes` 则同时发表情（见 [`tools/room-peer`](tools/room-peer)） |
-| `node tools/relay-probe/run.mjs` | 测试哪些公共 Nostr 中继适合传输房间信号，`src/main/relays.ts` 中的列表就是由它选出的（见 [`tools/relay-probe`](tools/relay-probe)） |
+| `cargo run` | 调试构建，打开设置窗口 |
+| `cargo run -- --hidden` | 启动后隐藏在托盘中，开机启动项就是这么拉起它的 |
+| `cargo test` | 运行各模块中的单元测试 |
+| `cargo build --release` | 在 `target/release/` 中生成优化并剥离符号的 exe |
 
 ### 发布新版本
 
-修改 `package.json` 中的 `version` 并提交，然后推送对应的标签，例如 `v0.2.0`。Release 工作流会先把 GitHub Release 创建为草稿。Windows 任务附加安装程序、`latest.yml` 和安装程序的 `.blockmap`，Mac 任务附加磁盘映像。electron-updater 需要 `latest.yml` 和 `.blockmap` 两者才能更新已安装的程序。全部附加完成后，最后一个任务会发布这个 Release。
+没有发布自动化。修改 `Cargo.toml` 中的 `version`，提交并打上对应的标签（例如 `v0.6.0`），然后 `cargo build --release`，把 `target/release/lolPing.exe` 连同 `assets` 文件夹一起上传到 GitHub Release。版本号在编译时写入 exe，显示在**设置 → 关于**中。
 
 ## 工作原理
 
-- **输入：** [`native/hook-helper`](native/hook-helper) 是一个小型 C++ 进程，在 Windows 上负责底层鼠标和键盘钩子，在 macOS 上使用事件监听（event tap）。它会吞掉 Alt + 拖动，使下面的程序完全收不到，并通过 stdin/stdout 以 JSON 行与 Electron 通信。
-- **显示：** Electron 在每个显示器上用一个透明、可点击穿透、始终置顶的窗口绘制轮盘和信号（[`src/renderer/overlay`](src/renderer/overlay)），并用 Web Audio 播放音效。
-- **房间：** [`src/main/roomManager.ts`](src/main/roomManager.ts) 管理房间成员，并加密每条消息（AES-256-GCM，密钥由房间码经 scrypt 生成）。[`src/main/lanTransport.ts`](src/main/lanTransport.ts) 通过局域网 UDP 传输加密后的数据包，[`src/main/relayTransport.ts`](src/main/relayTransport.ts) 则以临时事件的形式通过公共 Nostr 中继传输。
-- **更新：** [`src/main/updater.ts`](src/main/updater.ts) 负责定时检查，以及托盘和设置里显示的状态。[`src/main/updateWin.ts`](src/main/updateWin.ts) 通过 electron-updater 和 Release 上的 `latest.yml` 更新，[`src/main/updateMac.ts`](src/main/updateMac.ts) 读取 GitHub 的 releases API，并用 SHA-256 校验磁盘映像。
-- **设置：** Fluent UI 窗口（[`src/renderer/settings`](src/renderer/settings)），在 Windows 上使用 Mica 材质，在 macOS 上采用“系统设置”风格。
-- **演示页：** [`site`](site) 在浏览器中运行同一套信号层代码，用一个小的输入适配层代替输入助手。README 里的 GIF 就是用它录制的。
-- **设计文档：** [docs/design.md](docs/design.md)（英文）介绍了通信协议、输入状态机和多显示器坐标换算；[docs/design-macos.md](docs/design-macos.md)（英文）介绍了 Mac 版的移植。
+- **输入：** [`src/input/hook.rs`](src/input/hook.rs) 在自己的线程上安装底层鼠标和键盘钩子，并吞掉触发键，使下面的程序完全收不到。[`src/input/decision.rs`](src/input/decision.rs) 是状态机，把这些事件变成“打开轮盘”“在这个扇区上松开”“取消”或“开关”。
+- **显示：** [`src/display.rs`](src/display.rs) 枚举显示器，并在物理像素和各显示器 DIP 之间换算。[`src/overlay`](src/overlay) 在每个显示器上用一个可点击穿透、始终置顶的分层窗口绘制轮盘、信号、表情和提示（[`window.rs`](src/overlay/window.rs)），用 tiny-skia 光栅化（[`paint.rs`](src/overlay/paint.rs)），动画在 [`assets.rs`](src/overlay/assets.rs) 中解码。
+- **主程序：** [`src/app.rs`](src/app.rs) 是中枢：把钩子事件送到信号层，把设置送到钩子，并把托盘、房间和设置窗口串起来。
+- **房间：** [`src/room/manager.rs`](src/room/manager.rs) 管理成员和房间状态。[`crypto.rs`](src/room/crypto.rs) 加密每个数据包（AES-256-GCM，密钥由房间码经 scrypt 和 HKDF 派生），[`lan.rs`](src/room/lan.rs) 通过局域网 UDP 传输，[`relay.rs`](src/room/relay.rs) 和 [`nostr.rs`](src/room/nostr.rs) 则以临时事件的形式通过公共 Nostr 中继传输。
+- **设置：** [`src/settings/model.rs`](src/settings/model.rs) 保存默认值、范围限制，以及把磁盘上的任何内容整理成合法 `Settings` 的校验；[`store.rs`](src/settings/store.rs) 负责原子写入。窗口使用 egui/eframe（[`src/settings_window.rs`](src/settings_window.rs)、[`src/settings_window/ui.rs`](src/settings_window/ui.rs)）。
+- **表情：** [`src/emotes`](src/emotes) 里是英雄联盟表情目录、格式嗅探，以及把图片缩成表情的导入流程。
+- **声音：** [`src/audio.rs`](src/audio.rs) 通过 rodio 播放信号的 WAV 和表情的 Opus 音频。
+- **托盘：** [`src/tray.rs`](src/tray.rs) 负责菜单和三种图标状态。
+- **设计文档：** [docs/design.md](docs/design.md)。
 
 ## 信号素材
 
-`assets/textures` 中的图标和 `assets/sounds` 中的音效提取自本地安装的英雄联盟。游戏更新后如何重新提取，请见 [`tools/extract-assets`](tools/extract-assets)。`assets/emotes` 中的表情动画、图标和音效同样归 Riot Games 所有，由 `tools/extract-assets --emotes` 从同一份安装中烘焙生成。
+`assets/textures` 中的图标和 `assets/sounds` 中的音效提取自本地安装的英雄联盟。`assets/emotes` 中的表情动画、图标和音效同样归 Riot Games 所有。
 
 ## 许可证
 
