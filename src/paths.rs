@@ -145,11 +145,16 @@ fn font_roots() -> Vec<PathBuf> {
     roots
 }
 
-/// Next to the exe in a shipped build, in the source tree while developing.
+/// Next to the exe in a shipped build, in the app bundle's Resources on macOS, in the source tree while developing.
 fn assets_dir() -> PathBuf {
-    if let Some(dir) = std::env::current_exe().ok().and_then(|exe| exe.parent().map(|dir| dir.join("assets"))) {
-        if dir.is_dir() {
-            return dir;
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            for candidate in ["assets", "../Resources/assets"] {
+                let path = dir.join(candidate);
+                if path.is_dir() {
+                    return path;
+                }
+            }
         }
     }
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets")

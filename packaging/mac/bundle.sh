@@ -9,7 +9,7 @@ APP="$TARGET/release/lolPing.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$TARGET/release/lolPing" "$APP/Contents/MacOS/lolPing"
-cp -R "$ROOT/assets" "$APP/Contents/MacOS/assets"
+cp -R "$ROOT/assets" "$APP/Contents/Resources/assets"
 sed "s/__VERSION__/$VERSION/g" "$ROOT/packaging/mac/Info.plist" > "$APP/Contents/Info.plist"
 
 tmp=$(mktemp -d)
