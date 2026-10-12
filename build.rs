@@ -7,6 +7,6 @@ fn main() {
     res.set_icon("build/icon.ico");
     res.set("ProductName", "lolPing");
     res.set("FileDescription", "League of Legends style ping wheel");
-    res.set("LegalCopyright", "MIT");
+    res.set("LegalCopyright", "Copyright (c) 2026 Danrui Meng, SlimeSB. MIT licensed.");
     res.compile().expect("embed the Windows resources");
 }

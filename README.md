@@ -21,6 +21,8 @@
 
 Pings and emotes show up in whole-screen capture, so friends watching your Discord or OBS stream see them too. lolPing is a desktop toy: it doesn't read, change or hook into League itself.
 
+This is a Rust rewrite of [darrenprx/lolPing](https://github.com/darrenprx/lolPing), which is a TypeScript and Electron app for Windows and macOS. The rewrite is Windows only, runs as one process with no runtime dependencies, and keeps the original's ping art, settings file and room protocol.
+
 ## Install
 
 lolPing is `lolPing.exe` plus the `assets` folder it reads at runtime. Keep the two together: a shipped copy loads its icons, sounds and emotes from `assets` next to the exe.

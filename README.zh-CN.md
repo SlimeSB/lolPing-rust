@@ -21,6 +21,8 @@
 
 信号和表情会出现在全屏录制/共享画面里，所以在 Discord 或 OBS 上看你直播的朋友也能看到。lolPing 只是一个桌面小玩具：它不会读取、修改或注入英雄联盟本身。
 
+本项目是 [darrenprx/lolPing](https://github.com/darrenprx/lolPing) 的 Rust 重写。原版是 TypeScript + Electron，支持 Windows 和 macOS；重写版只支持 Windows，单进程、无运行时依赖，沿用原版的信号素材、设置文件格式和房间协议。
+
 ## 安装
 
 lolPing 由 `lolPing.exe` 和它在运行时读取的 `assets` 文件夹组成。两者要放在一起：分发出去的副本从 exe 旁边的 `assets` 里加载图标、音效和表情。

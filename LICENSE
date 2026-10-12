@@ -1,6 +1,7 @@
 MIT License
 
 Copyright (c) 2026 Danrui Meng
+Copyright (c) 2026 SlimeSB
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,8 +24,9 @@ SOFTWARE.
 ---
 
 This license covers lolPing's source code only. The ping icons in
-assets/textures and the sounds in assets/sounds are © Riot Games, Inc.,
-extracted from League of Legends, and are not licensed under the MIT License.
+assets/textures, the sounds in assets/sounds and the emote animations, icons
+and sounds in assets/emotes are © Riot Games, Inc., extracted from League of
+Legends, and are not licensed under the MIT License.
 lolPing isn't endorsed by Riot Games and doesn't reflect the views or opinions
 of Riot Games or anyone officially involved in producing or managing Riot Games
 properties. Riot Games, and all associated properties are trademarks or

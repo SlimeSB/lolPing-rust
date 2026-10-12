@@ -4,7 +4,7 @@ version = "0.5.1"
 edition = "2021"
 description = "League of Legends style ping wheel for your Windows desktop"
 license = "MIT"
-repository = "https://github.com/darrenprx/lolPing"
+repository = "https://github.com/SlimeSB/lolPing-rust"
 
 [[bin]]
 name = "lolPing"
