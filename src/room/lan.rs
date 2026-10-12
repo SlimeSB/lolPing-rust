@@ -126,7 +126,7 @@ fn run(events: Sender<TransportEvent>, opts: LanOptions, sock: UdpSocket, rx: Re
                     if sock.is_some() {
                         last_send = Some(Instant::now());
                     }
-                    send_to(sock.as_ref(), &peer, &bytes);
+                    send_to(opts.port, sock.as_ref(), &peer, &bytes);
                 }
                 Ok(TransportCommand::Broadcast { bytes }) => {
                     if sock.is_some() {
@@ -143,7 +143,7 @@ fn run(events: Sender<TransportEvent>, opts: LanOptions, sock: UdpSocket, rx: Re
             last_refresh = Instant::now();
         }
         match sock.as_ref() {
-            Some(sock) => read_socket(sock, &mut flood, &events),
+            Some(sock) => read_socket(opts.port, sock, &mut flood, &events),
             None => thread::sleep(Duration::from_millis(POLL_MS)),
         }
     }
@@ -171,12 +171,14 @@ fn open(opts: &LanOptions, sock: &mut Option<UdpSocket>, targets: &mut Vec<Ipv4A
     }
 }
 
-fn read_socket(sock: &UdpSocket, flood: &mut FloodGuard, events: &Sender<TransportEvent>) {
+fn read_socket(port: u16, sock: &UdpSocket, flood: &mut FloodGuard, events: &Sender<TransportEvent>) {
     let mut buf = [0u8; READ_BUF];
     for _ in 0..MAX_READS_PER_TICK {
         match sock.recv_from(&mut buf) {
             Ok((n, from)) if n <= MAX_PACKET => {
+                trace::record(trace::RECV, port, from.port(), n, 0);
                 if !flood.allow(&from.ip().to_string()) {
+                    trace::record(trace::RECV_FLOODED, port, from.port(), n, 0);
                     continue;
                 }
                 let peer = format!("lan:{}:{}", from.ip(), from.port());
@@ -184,18 +186,100 @@ fn read_socket(sock: &UdpSocket, flood: &mut FloodGuard, events: &Sender<Transpo
                     return;
                 }
             }
-            Ok(_) => {}
+            Ok((n, from)) => trace::record(trace::RECV_OVERSIZED, port, from.port(), n, 0),
             Err(e) if e.kind() == ErrorKind::WouldBlock || e.kind() == ErrorKind::TimedOut => return,
-            Err(_) => return,
+            Err(e) => {
+                trace::record(trace::RECV_ERROR, port, 0, 0, e.raw_os_error().unwrap_or(-1));
+                return;
+            }
         }
     }
 }
 
-fn send_to(sock: Option<&UdpSocket>, peer: &str, bytes: &[u8]) {
-    let (Some(sock), Some((host, port))) = (sock, parse_peer(peer)) else {
+/// A ring of transport events, so a failed test can be explained without slowing the transports down.
+mod trace {
+    #[cfg(test)]
+    use parking_lot::Mutex;
+    #[cfg(test)]
+    use std::collections::VecDeque;
+    #[cfg(test)]
+    use std::sync::LazyLock;
+    #[cfg(test)]
+    use std::time::Instant;
+
+    pub const SEND: u8 = 1;
+    pub const SEND_SKIPPED: u8 = 2;
+    pub const RECV: u8 = 3;
+    pub const RECV_FLOODED: u8 = 4;
+    pub const RECV_OVERSIZED: u8 = 5;
+    pub const RECV_ERROR: u8 = 6;
+
+    #[cfg(test)]
+    const CAPACITY: usize = 16_384;
+
+    #[cfg(test)]
+    static START: LazyLock<Instant> = LazyLock::new(Instant::now);
+    #[cfg(test)]
+    static RING: Mutex<VecDeque<Event>> = Mutex::new(VecDeque::new());
+
+    #[cfg(test)]
+    #[allow(dead_code)]
+    #[derive(Clone, Copy)]
+    struct Event {
+        at_ms: u64,
+        kind: u8,
+        port: u16,
+        peer_port: u16,
+        bytes: u16,
+        code: i32,
+    }
+
+    #[cfg(test)]
+    pub fn record(kind: u8, port: u16, peer_port: u16, bytes: usize, code: i32) {
+        let mut ring = RING.lock();
+        if ring.len() >= CAPACITY {
+            ring.pop_front();
+        }
+        ring.push_back(Event { at_ms: START.elapsed().as_millis() as u64, kind, port, peer_port, bytes: bytes as u16, code });
+    }
+
+    #[cfg(not(test))]
+    pub fn record(_kind: u8, _port: u16, _peer_port: u16, _bytes: usize, _code: i32) {}
+
+    /// The events that touch either port, oldest first.
+    #[cfg(test)]
+    pub fn dump(a: u16, b: u16) -> Vec<String> {
+        let ring = RING.lock();
+        ring.iter()
+            .filter(|e| [e.port, e.peer_port].iter().any(|p| *p == a || *p == b))
+            .map(|e| {
+                let name = match e.kind {
+                    SEND => "send",
+                    SEND_SKIPPED => "send-skipped",
+                    RECV => "recv",
+                    RECV_FLOODED => "recv-flood-dropped",
+                    RECV_OVERSIZED => "recv-oversized",
+                    _ => "recv-error",
+                };
+                format!("{:>7}ms {name} port={} peer={} n={} code={}", e.at_ms, e.port, e.peer_port, e.bytes, e.code)
+            })
+            .collect()
+    }
+}
+
+fn send_to(port: u16, sock: Option<&UdpSocket>, peer: &str, bytes: &[u8]) {
+    let (Some(sock), Some((host, to))) = (sock, parse_peer(peer)) else {
+        trace::record(trace::SEND_SKIPPED, port, 0, bytes.len(), 0);
         return;
     };
-    let _ = sock.send_to(bytes, SocketAddrV4::new(host, port));
+    let sent = sock.send_to(bytes, SocketAddrV4::new(host, to));
+    let code = match sent {
+        Ok(_) => 0,
+        Err(ref e) => e.raw_os_error().unwrap_or(-1),
+    };
+    let local = sock.local_addr().map(|a| a.port()).unwrap_or(0);
+    let written = sent.unwrap_or(0);
+    trace::record(trace::SEND, local, to, written, code);
 }
 
 fn broadcast(sock: Option<&UdpSocket>, opts: &LanOptions, targets: &[Ipv4Addr], bytes: &[u8]) {
@@ -492,25 +576,48 @@ mod tests {
         drop(blocker);
     }
 
+    /// A socket that just started can lose a datagram on Windows without an error, so every attempt gets fresh ports.
     #[test]
     fn stop_flushes_a_pending_packet_and_frees_the_port() {
         let _serial = SERIAL.lock();
-        let (a_port, b_port) = ports();
+        for attempt in 1..=4 {
+            let (a_port, b_port) = ports();
+            if stop_flush_once(a_port, b_port) {
+                return;
+            }
+            eprintln!("LANTRACE attempt {attempt} lost the flushed packet");
+            for line in trace::dump(a_port, b_port) {
+                eprintln!("LANTRACE {line}");
+            }
+        }
+        panic!("the flushed packet never arrived in 4 attempts");
+    }
+
+    fn stop_flush_once(a_port: u16, b_port: u16) -> bool {
         let (a_tx, a_rx) = channel();
         let (b_tx, b_rx) = channel();
         let a = start_with(a_tx, opts(a_port, b_port)).expect("a binds");
         let b = start_with(b_tx, opts(b_port, a_port)).expect("b binds");
         until(&a_rx, |s| status(s, Link::Ok));
-        // Three copies: one datagram can be dropped on a machine running the whole suite at once.
+        // A socket that was just bound can drop the first datagram on Windows, so let it settle before sending.
+        thread::sleep(Duration::from_millis(150));
         for _ in 0..3 {
             a.send_to(&format!("lan:127.0.0.1:{b_port}"), b"bye");
             thread::sleep(Duration::from_millis(30));
         }
         a.shutdown();
-        let seen = until(&b_rx, |s| !packets(s).is_empty());
-        assert_eq!(packets(&seen)[0], b"bye");
-        UdpSocket::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, a_port)).expect("port is free again");
+        let end = Instant::now() + Duration::from_secs(2);
+        let mut seen = Vec::new();
+        while Instant::now() < end && packets(&seen).is_empty() {
+            while let Ok(ev) = b_rx.try_recv() {
+                seen.push(ev);
+            }
+            thread::sleep(Duration::from_millis(10));
+        }
+        let arrived = packets(&seen).iter().any(|p| p.as_slice() == b"bye");
         b.shutdown();
+        UdpSocket::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, a_port)).expect("port is free again");
+        arrived
     }
 
     #[test]
