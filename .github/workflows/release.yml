@@ -1,0 +1,39 @@
+name: Release
+
+# Push a tag that matches Cargo.toml's version (for example v0.6.0) to build the Windows zip and publish it.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Check the tag against Cargo.toml
+        shell: bash
+        run: |
+          version=$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Cargo.toml says $version, the tag is $GITHUB_REF_NAME"
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+      - run: cargo test --locked --release
+      - run: cargo build --locked --release
+      # The app reads its icons, sounds and emotes from the assets folder beside the exe, so the two ship together.
+      - name: Package the exe with its assets
+        shell: pwsh
+        run: Compress-Archive -Path target/release/lolPing.exe, assets -DestinationPath "lolPing-$env:VERSION-win64.zip"
+      - name: Create the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "lolPing $VERSION" --generate-notes "lolPing-$VERSION-win64.zip"

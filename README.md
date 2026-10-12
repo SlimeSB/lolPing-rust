@@ -15,6 +15,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/SlimeSB/lolPing-rust/actions/workflows/ci.yml"><img src="https://github.com/SlimeSB/lolPing-rust/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/SlimeSB/lolPing-rust/releases/latest"><img src="https://img.shields.io/github/v/release/SlimeSB/lolPing-rust" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/SlimeSB/lolPing-rust" alt="MIT license"></a>
 </p>
@@ -27,7 +28,7 @@ Pings and emotes show up in whole-screen capture, so friends watching your Disco
 
 lolPing is `lolPing.exe` plus the `assets` folder it reads at runtime. Keep the two together: a shipped copy loads its icons, sounds and emotes from `assets` next to the exe.
 
-1. Get `lolPing.exe` and `assets` from the [latest release](https://github.com/SlimeSB/lolPing-rust/releases/latest), or build them yourself (see [Build from source](#build-from-source)).
+1. Get `lolPing.exe` and `assets` from the [latest release](https://github.com/SlimeSB/lolPing-rust/releases/latest), where `lolPing-<version>-win64.zip` holds both, or build them yourself (see [Build from source](#build-from-source)).
 2. Run `lolPing.exe`. It opens its settings window and moves to the tray.
 3. Hold Alt and drag anywhere to ping.
 
@@ -113,7 +114,7 @@ cargo run
 
 ### Releasing
 
-There is no release automation. Bump `version` in `Cargo.toml`, commit, tag it (for example `v0.6.0`), then `cargo build --release` and attach `target/release/lolPing.exe` together with the `assets` folder to a GitHub release. The version is baked into the exe at compile time and shows up in Settings → About.
+Bump `version` in `Cargo.toml`, commit, then push a matching tag such as `v0.6.0`. The Release workflow runs the tests, builds `lolPing.exe` and attaches `lolPing-<version>-win64.zip` (the exe together with `assets`) to a GitHub release. A tag that doesn't match the version in `Cargo.toml` stops the workflow before anything is published. The version is baked into the exe at compile time and shows up in Settings → About.
 
 ## How it works
 

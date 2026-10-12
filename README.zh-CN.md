@@ -15,6 +15,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/SlimeSB/lolPing-rust/actions/workflows/ci.yml"><img src="https://github.com/SlimeSB/lolPing-rust/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/SlimeSB/lolPing-rust/releases/latest"><img src="https://img.shields.io/github/v/release/SlimeSB/lolPing-rust" alt="最新版本"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/SlimeSB/lolPing-rust" alt="MIT 许可证"></a>
 </p>
@@ -27,7 +28,7 @@
 
 lolPing 由 `lolPing.exe` 和它在运行时读取的 `assets` 文件夹组成。两者要放在一起：分发出去的副本从 exe 旁边的 `assets` 里加载图标、音效和表情。
 
-1. 从[最新版本](https://github.com/SlimeSB/lolPing-rust/releases/latest)获取 `lolPing.exe` 和 `assets`，或者自己构建（见[从源码构建](#从源码构建)）。
+1. 从[最新版本](https://github.com/SlimeSB/lolPing-rust/releases/latest)获取 `lolPing.exe` 和 `assets`（`lolPing-<version>-win64.zip` 里就是这两样），或者自己构建（见[从源码构建](#从源码构建)）。
 2. 运行 `lolPing.exe`。它会打开设置窗口并常驻系统托盘。
 3. 按住 Alt 在任意位置拖动即可发信号。
 
@@ -113,7 +114,7 @@ cargo run
 
 ### 发布新版本
 
-没有发布自动化。修改 `Cargo.toml` 中的 `version`，提交并打上对应的标签（例如 `v0.6.0`），然后 `cargo build --release`，把 `target/release/lolPing.exe` 连同 `assets` 文件夹一起上传到 GitHub Release。版本号在编译时写入 exe，显示在**设置 → 关于**中。
+修改 `Cargo.toml` 中的 `version`，提交，然后推送一个与之匹配的标签（例如 `v0.6.0`）。Release 工作流会跑测试、构建 `lolPing.exe`，并把 `lolPing-<version>-win64.zip`（exe 连同 `assets`）附到 GitHub Release 上。标签和 `Cargo.toml` 里的版本号对不上时，工作流会在发布任何东西之前停下。版本号在编译时写入 exe，显示在**设置 → 关于**中。
 
 ## 工作原理
 
