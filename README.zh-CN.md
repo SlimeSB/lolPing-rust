@@ -5,13 +5,13 @@
 </p>
 
 <p align="center">
-  把英雄联盟的信号和表情搬到整个桌面，支持 Windows。<br>
+  把英雄联盟的信号和表情搬到整个桌面，支持 Windows、Linux 和 macOS。<br>
   按住 <b>Alt</b> 拖动，在想要的信号上松开：动画弹出、音效响起，任何程序之上、任何显示器上都可以。<br>
   按住 <b>Ctrl</b> 拖动打开表情轮盘：英雄联盟的表情，或你自己的图片。
 </p>
 
 <p align="center">
-  <a href="https://github.com/SlimeSB/lolPing-rust/releases/latest"><b>下载 Windows 版</b></a>
+  <a href="https://github.com/SlimeSB/lolPing-rust/releases/latest"><b>下载</b></a>
 </p>
 
 <p align="center">
@@ -21,17 +21,31 @@
 
 信号和表情会出现在全屏录制/共享画面里，所以在 Discord 或 OBS 上看你直播的朋友也能看到。lolPing 只是一个桌面小玩具：它不会读取、修改或注入英雄联盟本身。
 
-本项目是 [darrenprx/lolPing](https://github.com/darrenprx/lolPing) 的 Rust 重写。原版是 TypeScript + Electron，支持 Windows 和 macOS；重写版只支持 Windows，单进程、无运行时依赖，沿用原版的信号素材、设置文件格式和房间协议。
+本项目是 [darrenprx/lolPing](https://github.com/darrenprx/lolPing) 的 Rust 重写。原版是 TypeScript + Electron，支持 Windows 和 macOS；重写版单进程、无运行时依赖，沿用原版的信号素材、设置文件格式和房间协议，支持 Windows、Linux 和 macOS。
+
+Windows 是这次重写成长起来的平台。Linux 运行在 X11 会话上，尚不支持 Wayland，透明信号层需要合成器。macOS 版本是新的：它已经能编译，但从未在 Mac 上运行过，请当作实验性支持。
 
 ## 安装
 
-lolPing 由 `lolPing.exe` 和它在运行时读取的 `assets` 文件夹组成。两者要放在一起：分发出去的副本从 exe 旁边的 `assets` 里加载图标、音效和表情。
+lolPing 由可执行文件和它在运行时读取的 `assets` 文件夹组成。两者要放在一起：分发出去的副本从程序旁边的 `assets` 里加载图标、音效和表情。
 
-1. 从[最新版本](https://github.com/SlimeSB/lolPing-rust/releases/latest)获取 `lolPing.exe` 和 `assets`（`lolPing-<version>-win64.zip` 里就是这两样），或者自己构建（见[从源码构建](#从源码构建)）。
-2. 运行 `lolPing.exe`。它会打开设置窗口并常驻系统托盘。
-3. 按住 Alt 在任意位置拖动即可发信号。
+**Windows** —— `lolPing-<version>-win64.zip` 里是 `lolPing.exe` 和 `assets`。
 
-exe 面向 64 位 Windows 构建。程序已在运行时再次启动，只会打开当前那个副本的设置窗口。
+1. 把两者解压到同一目录，运行 `lolPing.exe`。它会打开设置窗口并常驻系统托盘。
+2. 按住 Alt 在任意位置拖动即可发信号。
+
+**Linux** —— `lolPing-<version>-linux-x86_64.tar.gz` 里是 `lolPing` 和 `assets`。
+
+1. 解压后运行 `./lolPing`。托盘图标需要 GTK 3，还需要 X11 会话：不支持 Wayland，且只有在合成器运行时信号层才是透明的。
+2. 设置存放在 `$XDG_DATA_HOME/lolPing`（该变量未设置时为 `~/.local/share/lolPing`）。
+
+**macOS** —— `lolPing-<version>-arm64.tar.gz` 里是 `lolPing.app`，为 Apple Silicon 和 macOS 12 及以上版本构建。
+
+1. 把 `lolPing.app` 移到你想放的位置。它只是临时签名，所以下载来的副本需要先执行 `xattr -dr com.apple.quarantine lolPing.app`，macOS 才会打开它。
+2. 打开它，在弹出提示时授予**辅助功能**权限。macOS 只允许获得该权限的程序读取鼠标和键盘，而且每次更新后都会忘记这次授权。
+3. 它常驻菜单栏：按住 ⌥ Option 拖动即可发信号。
+
+lolPing 已在运行时再次启动，只会打开当前那个副本的设置窗口。
 
 ## 使用
 
@@ -51,20 +65,20 @@ exe 面向 64 位 Windows 构建。程序已在运行时再次启动，只会打
 
 <img src="docs/media/settings.zh-CN.png" width="760" alt="lolPing 设置窗口，一个可滚动的页面，依次是触发、开关、信号与声音、轮盘、表情、房间和应用等部分">
 
-- **触发键：** 默认 Alt。还可以选 Ctrl、Shift、Win、Caps Lock、鼠标侧键 4、鼠标侧键 5，或任意其他按键。使用自定义按键时，lolPing 开启期间该键不会在其他程序中输入字符。
+- **触发键：** 默认 Alt。还可以选 Ctrl、Shift、Win、Caps Lock、鼠标侧键 4、鼠标侧键 5，或任意其他按键。使用自定义按键时，lolPing 开启期间该键不会在其他程序中输入字符。在 macOS 上按键名显示为 ⌥ Option、⌃ Control、⇧ Shift 和 ⌘ Command，且不提供 Caps Lock：macOS 不允许程序接管它的开关状态。
 - **拖动距离：** 鼠标移动多远后才打开轮盘（2 到 40 像素，默认 8）。
 - **Alt + 单击发送信号：** 默认关闭，这样平时的 Alt + 单击快捷操作不受影响。发送的是轮盘中心的信号（默认是普通信号）。
-- **全屏程序中暂停：** 默认开启。全屏游戏独占所有点击——触发键 + 单击原样交给程序——回到桌面或在其他显示器上手势恢复正常。窗口化游戏检测不到；任务栏自动隐藏时只识别无边框全屏。
+- **全屏程序中暂停：** 默认开启，仅限 Windows。全屏游戏独占所有点击——触发键 + 单击原样交给程序——回到桌面或在其他显示器上手势恢复正常。窗口化游戏检测不到；任务栏自动隐藏时只识别无边框全屏。
 - **开关快捷键：** 默认 Ctrl + Alt + P，必须包含 Ctrl、Alt 或 Win。
 - **启动时开启：** 启动 lolPing 时信号处于开启状态。
 - **信号与声音：** 信号大小（60 到 220 像素）、信号在屏幕上停留多久（1 到 8 秒）、音量、静音，以及轮盘提示音。
 - **轮盘：** 为 8 个扇区各选一个信号，再为中心选一个，也就是 Alt + 单击发送的信号。单击**全部信号**里的信号可以预览。**恢复默认**会还原英雄联盟的布局。
 - **表情：** 表情键（默认 Ctrl，也可以关闭）、**Ctrl + 单击发送表情**（默认关闭）、表情大小、表情音效，以及 8 个扇区的表情轮盘（编辑方式和信号轮盘相同）。点**添加图片…**，或把图片拖到窗口上，可以加入自己的图片：PNG、JPG、GIF 或 WebP，最大 8 MB、最长边不超过 8192 像素（动图最大 5 MB、最长边不超过 1024 像素），最多 24 张。动图在你自己这里正常播放；朋友看不到你导入的图片。
 - **房间：** 你的名字和名字颜色、**房间静音**、接收信号和表情上限、**允许互联网连接**、**启动时重新加入上次的房间**，以及信号可以落在哪些显示器上。
-- **应用：** **开机启动**（启动后隐藏在托盘中）、**语言**（跟随 Windows、English 或简体中文）。
+- **应用：** **开机启动**（启动后隐藏在托盘中：在 Windows 和 Linux 上是开机启动项，在 macOS 上是登录项）、**语言**（跟随 Windows、English 或简体中文）。
 - **关于：** 版本号、缺失或出问题的地方，以及已知限制。
 
-设置在 `%APPDATA%\lolPing\settings.json` 中，导入的图片在 `%APPDATA%\lolPing\emotes` 中。
+设置在 Windows 上位于 `%APPDATA%\lolPing\settings.json`，在 Linux 上位于 `$XDG_DATA_HOME/lolPing/settings.json`，在 macOS 上位于 `~/Library/Application Support/lolPing/settings.json`。你导入的图片就在旁边的 `emotes` 文件夹里。
 
 ## 和朋友一起发信号（房间）
 
@@ -74,7 +88,7 @@ exe 面向 64 位 Windows 构建。程序已在运行时再次启动，只会打
 2. 复制房间码（例如 `PING-7KQ4M-2HXTR`）发给朋友。
 3. 朋友把它粘贴到房间页面后点击**加入**，或右键托盘图标后点击**从剪贴板加入**。
 
-- **同一网络：** 第一次使用时，Windows 会询问是否允许 lolPing 使用网络：请允许，并把 Wi‑Fi 设置为**专用网络**。如果 lolPing 打不开 UDP 端口 47474，房间页面会提示。
+- **同一网络：** 在 Windows 上第一次使用时，防火墙会询问是否允许 lolPing 使用网络：请允许，并把 Wi‑Fi 设置为**专用网络**。如果 lolPing 打不开 UDP 端口 47474，房间页面会提示。
 - **不同网络：** 打开**允许互联网连接**（默认开启）后，任何地方的朋友都能用同一个房间码加入。信号通过免费的公共 [Nostr](https://nostr.com) 中继传输，比局域网稍慢一点；能走局域网时仍会优先使用局域网。
 - 信号会显示在编号相同的显示器上（1 号是主显示器），没有则显示在 1 号上。
 - **表情**和信号一样发给房间：朋友会在自己的屏幕上看到，下面带着你的名字。你导入的图片在他们那里显示为占位图形。版本低于 0.5.0 的朋友看不到表情，房间页面会在他们的名字下面提示。
@@ -88,38 +102,45 @@ exe 面向 64 位 Windows 构建。程序已在运行时再次启动，只会打
 - 独占全屏的游戏会盖住信号层。
 - 只共享单个窗口时看不到信号，请改为共享整个屏幕。
 - 开启 lolPing 后，Ctrl + 拖动（默认的表情键）会打开表情轮盘，而不是复制文件或文字。可以在**设置 → 表情**中换一个表情键，或者把它关掉。
+- 在 Linux 上，设置窗口和 Alt + 拖动手势只在 X11 上验证过（openbox 和 Xwayland）。像 KWin、Mutter 这类自己用 Alt + 拖动的桌面环境，可能需要改掉它们的快捷键。
+- macOS 版本还没有在 Mac 上运行过：Retina 屏幕上的信号层几何、辅助功能授权流程和设置窗口都未经验证，而且临时签名意味着每次更新后都要重新授予权限。
 
 ## 从源码构建
 
-需要 [Rust 工具链](https://rustup.rs)（stable，edition 2021），以及 Visual Studio Build Tools 中“使用 C++ 的桌面开发”工作负载提供的 MSVC 链接器。`.cargo/config.toml` 会静态链接 C 运行时，所以生成的 exe 在没装 VC++ 运行库的机器上也能运行。
+需要 [Rust 工具链](https://rustup.rs)（stable，edition 2021），以及：
+
+- **Windows：** Visual Studio Build Tools 中“使用 C++ 的桌面开发”工作负载提供的 MSVC 链接器。`.cargo/config.toml` 会静态链接 C 运行时，所以生成的 exe 在没装 VC++ 运行库的机器上也能运行。
+- **Linux：** `libgtk-3-dev libayatana-appindicator3-dev libxkbcommon-dev libasound2-dev`，以及用于音频和加密 crate 的 C 工具链。
+- **macOS：** Xcode Command Line Tools（`xcode-select --install`）。
 
 ```bash
 cargo build --release
 ```
 
-程序在 `target/release/lolPing.exe`。想一步完成构建并运行：
+程序在 Windows 上是 `target/release/lolPing.exe`，在 Linux 上是 `target/release/lolPing`。在 macOS 上，`packaging/mac/bundle.sh` 会把可执行文件和 `assets` 打包成 `target/release/lolPing.app`。想一步完成构建并运行：
 
 ```bash
 cargo run
 ```
 
-`cargo run` 在任何目录下都能用：程序会先找 exe 旁边的 `assets`，找不到就回退到源码树里的 `assets`。交给别人的副本需要把 `assets` 放在 `lolPing.exe` 旁边。`build.rs` 会把 `build/icon.ico` 和版本信息写进 exe。
+`cargo run` 在任何目录下都能用：程序会先找可执行文件旁边的 `assets`，找不到就回退到源码树里的 `assets`。交给别人的副本需要把 `assets` 放在可执行文件旁边。在 Windows 上，`build.rs` 会把 `build/icon.ico` 和版本信息写进 exe。
 
 | 命令 | 作用 |
 | --- | --- |
 | `cargo run` | 调试构建，打开设置窗口 |
 | `cargo run -- --hidden` | 启动后隐藏在托盘中，开机启动项就是这么拉起它的 |
 | `cargo test` | 运行各模块中的单元测试 |
-| `cargo build --release` | 在 `target/release/` 中生成优化并剥离符号的 exe |
+| `cargo build --release` | 在 `target/release/` 中生成优化并剥离符号的可执行文件 |
 
 ### 发布新版本
 
-修改 `Cargo.toml` 中的 `version`，提交，然后推送一个与之匹配的标签（例如 `v0.5.1`）。Release 工作流会构建 `lolPing.exe`，并把 `lolPing-<version>-win64.zip`（exe 连同 `assets`）附到 GitHub Release 上。标签和 `Cargo.toml` 里的版本号对不上时，工作流会在发布任何东西之前停下。版本号在编译时写入 exe，显示在**设置 → 关于**中。
+修改 `Cargo.toml` 中的 `version`，提交，然后推送一个与之匹配的标签（例如 `v0.5.2`）。Release 工作流会构建三个包——`lolPing-<version>-win64.zip`、`lolPing-<version>-linux-x86_64.tar.gz` 和 `lolPing-<version>-arm64.tar.gz`——并把它们附到 GitHub Release 上。标签和 `Cargo.toml` 里的版本号对不上时，工作流会在发布任何东西之前停下。手动触发同一个工作流只会构建这些包、不发布，这是在打标签之前试打包的方式。版本号在编译时写入可执行文件，显示在**设置 → 关于**中。
 
 ## 工作原理
 
-- **输入：** [`src/input/hook.rs`](src/input/hook.rs) 在自己的线程上安装底层鼠标和键盘钩子，并吞掉触发键，使下面的程序完全收不到。[`src/input/decision.rs`](src/input/decision.rs) 是状态机，把这些事件变成“打开轮盘”“在这个扇区上松开”“取消”或“开关”。
-- **显示：** [`src/display.rs`](src/display.rs) 枚举显示器，并在物理像素和各显示器 DIP 之间换算。[`src/overlay`](src/overlay) 在每个显示器上用一个可点击穿透、始终置顶的分层窗口绘制轮盘、信号、表情和提示（[`window.rs`](src/overlay/window.rs)），用 tiny-skia 光栅化（[`paint.rs`](src/overlay/paint.rs)），动画在 [`assets.rs`](src/overlay/assets.rs) 中解码。
+- **输入：** [`src/input/hook`](src/input/hook) 在自己的线程上安装底层鼠标和键盘钩子，并吞掉触发键，使下面的程序完全收不到。[`src/input/decision.rs`](src/input/decision.rs) 是状态机，把这些事件变成“打开轮盘”“在这个扇区上松开”“取消”或“开关”。
+- **显示：** [`src/display`](src/display) 枚举显示器，并在物理像素和各显示器 DIP 之间换算。[`src/overlay`](src/overlay) 在每个显示器上用一个可点击穿透、始终置顶的分层窗口绘制轮盘、信号、表情和提示（[`src/overlay/window`](src/overlay/window)），用 tiny-skia 光栅化（[`paint.rs`](src/overlay/paint.rs)），动画在 [`assets.rs`](src/overlay/assets.rs) 中解码。
+- **平台：** 所有属于操作系统的部分都藏在一个接缝之后——[`src/input/hook`](src/input/hook)、[`src/display`](src/display)、[`src/overlay/window`](src/overlay/window)、[`src/clipboard`](src/clipboard)、[`src/autostart`](src/autostart) 和 [`src/permissions`](src/permissions)——每个都是一个共用的 `mod.rs`，后面跟着 `win.rs`、`linux.rs` 和 `mac.rs`。
 - **主程序：** [`src/app.rs`](src/app.rs) 是中枢：把钩子事件送到信号层，把设置送到钩子，并把托盘、房间和设置窗口串起来。
 - **房间：** [`src/room/manager.rs`](src/room/manager.rs) 管理成员和房间状态。[`crypto.rs`](src/room/crypto.rs) 加密每个数据包（AES-256-GCM，密钥由房间码经 scrypt 和 HKDF 派生），[`lan.rs`](src/room/lan.rs) 通过局域网 UDP 传输，[`relay.rs`](src/room/relay.rs) 和 [`nostr.rs`](src/room/nostr.rs) 则以临时事件的形式通过公共 Nostr 中继传输。
 - **设置：** [`src/settings/model.rs`](src/settings/model.rs) 保存默认值、范围限制，以及把磁盘上的任何内容整理成合法 `Settings` 的校验；[`store.rs`](src/settings/store.rs) 负责原子写入。窗口使用 egui/eframe（[`src/settings_window.rs`](src/settings_window.rs)、[`src/settings_window/ui.rs`](src/settings_window/ui.rs)）。
