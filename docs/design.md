@@ -1,7 +1,7 @@
 # lolPing, Design Spec
 
 **Date:** 2026-10-12
-**Status:** implemented in the Rust app, version 0.6.0 (`Cargo.toml`)
+**Status:** implemented in the Rust app, version 0.5.1 (`Cargo.toml`)
 
 This note holds what `src/` cannot say: the decisions behind it, the shape of what peers exchange, and the invariants that hold across modules. Everything else is the code.
 

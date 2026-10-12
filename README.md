@@ -112,7 +112,7 @@ cargo run
 
 ### Releasing
 
-Bump `version` in `Cargo.toml`, commit, then push a matching tag such as `v0.6.0`. The Release workflow builds `lolPing.exe` and attaches `lolPing-<version>-win64.zip` (the exe together with `assets`) to a GitHub release. A tag that doesn't match the version in `Cargo.toml` stops the workflow before anything is published. The version is baked into the exe at compile time and shows up in Settings → About.
+Bump `version` in `Cargo.toml`, commit, then push a matching tag such as `v0.5.1`. The Release workflow builds `lolPing.exe` and attaches `lolPing-<version>-win64.zip` (the exe together with `assets`) to a GitHub release. A tag that doesn't match the version in `Cargo.toml` stops the workflow before anything is published. The version is baked into the exe at compile time and shows up in Settings → About.
 
 ## How it works
 
