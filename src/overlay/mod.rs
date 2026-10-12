@@ -37,7 +37,6 @@ pub struct Paths {
     pub assets: PathBuf,
     pub bundled_emotes: PathBuf,
     pub custom_emotes: PathBuf,
-    pub fonts: PathBuf,
 }
 
 pub enum Command {
@@ -157,7 +156,7 @@ fn run(rx: Receiver<Command>, events: Sender<Event>, paths: Paths) {
     }
 
     let mut assets = Assets::new();
-    let text = Text::load(&paths.fonts);
+    let text = Text::load();
     let mut visuals = Visuals::default();
     let mut was_active = false;
     let mut next_frame = Instant::now();

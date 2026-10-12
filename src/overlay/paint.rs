@@ -966,7 +966,6 @@ mod tests {
             assets: PathBuf::from("assets"),
             bundled_emotes: PathBuf::from("assets/emotes"),
             custom_emotes: PathBuf::from("target/test-emotes"),
-            fonts: PathBuf::from(std::env::var("WINDIR").unwrap_or_else(|_| "C:/Windows".into())).join("Fonts"),
         }
     }
 
@@ -1053,7 +1052,7 @@ mod tests {
         let mut assets = Assets::new();
         let visuals = Visuals::default();
         let paths = paths();
-        let text = Text::load(&paths.fonts);
+        let text = Text::load();
         paint(&mut scene, &mut ctx(&mut canvas, &mut assets, &text, &visuals, now, &paths));
 
         let painted = canvas.data().as_chunks::<4>().0.iter().filter(|px| px[3] > 0).count();
@@ -1101,7 +1100,7 @@ mod tests {
         let mut assets = Assets::new();
         let visuals = Visuals::default();
         let paths = paths();
-        let text = Text::load(&paths.fonts);
+        let text = Text::load();
         paint(&mut scene, &mut ctx(&mut canvas, &mut assets, &text, &visuals, now, &paths));
 
         let (cx, cy) = (900u32, 540 - 137);
@@ -1118,7 +1117,7 @@ mod tests {
         let mut assets = Assets::new();
         let visuals = Visuals::default();
         let paths = paths();
-        let text = Text::load(&paths.fonts);
+        let text = Text::load();
         paint(&mut Scene::default(), &mut ctx(&mut canvas, &mut assets, &text, &visuals, now, &paths));
         assert!(canvas.data().as_chunks::<4>().0.iter().all(|px| px[3] == 0), "an empty scene painted pixels");
     }
@@ -1131,7 +1130,7 @@ mod tests {
         let mut assets = Assets::new();
         let visuals = Visuals::default();
         let paths = paths();
-        let text = Text::load(&paths.fonts);
+        let text = Text::load();
         paint(&mut scene, &mut ctx(&mut canvas, &mut assets, &text, &visuals, now, &paths));
 
         let mut rgba = canvas.data().to_vec();

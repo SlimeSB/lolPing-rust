@@ -290,7 +290,10 @@ fn apply_grabs(st: &mut State) {
     st.keys.clear();
 
     let mask = xproto::EventMask::BUTTON_PRESS | xproto::EventMask::BUTTON_RELEASE | xproto::EventMask::POINTER_MOTION;
-    for spec in [st.cfg.trigger, st.cfg.emote_trigger] {
+    for (spec, vk) in [
+        (st.cfg.trigger, st.cfg.trigger_vk),
+        (st.cfg.emote_trigger, st.cfg.emote_trigger_vk),
+    ] {
         if let Some(trigger_mask) = modifier_mask(spec) {
             for variant in lock_variants(trigger_mask) {
                 let _ = st.conn.grab_button(
@@ -321,7 +324,6 @@ fn apply_grabs(st: &mut State) {
             );
             st.buttons.push((button, xproto::ModMask::ANY));
         } else if spec == Trigger::CapsLock || spec == Trigger::CustomVk {
-            let vk = if spec == Trigger::CapsLock { 0 } else { st.cfg.trigger_vk };
             if let Some(keycode) = trigger_keycode(st, spec, vk) {
                 for variant in lock_variants(xproto::ModMask::default()) {
                     let _ = st.conn.grab_key(

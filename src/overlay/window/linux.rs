@@ -37,6 +37,7 @@ impl LayeredWindow {
         let window = conn.generate_id().map_err(|error| error.to_string())?;
         let aux = CreateWindowAux::new()
             .background_pixel(0)
+            .border_pixel(0)
             .colormap(colormap)
             .override_redirect(1)
             .event_mask(EventMask::NO_EVENT);

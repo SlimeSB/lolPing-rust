@@ -155,11 +155,13 @@ const POLL: Duration = Duration::from_millis(100);
 
 /// egui ships Latin-only faces: without one of these, every Chinese label is a row of boxes.
 fn install_fonts(ctx: &egui::Context) {
-    const CANDIDATES: [(&str, u32); 4] = [("Deng.ttf", 0), ("simhei.ttf", 0), ("msyh.ttc", 0), ("simsun.ttc", 0)];
-    let dir = crate::paths::system_fonts();
-    let Some((bytes, index)) = CANDIDATES.iter().find_map(|(name, index)| {
-        std::fs::read(dir.join(name)).ok().map(|bytes| (bytes, *index))
-    }) else {
+    let Some((path, index)) = crate::paths::CJK_FACES
+        .iter()
+        .find_map(|(names, index)| crate::paths::font_path(names).map(|path| (path, *index)))
+    else {
+        return;
+    };
+    let Ok(bytes) = std::fs::read(path) else {
         return;
     };
     let mut data = egui::FontData::from_owned(bytes);

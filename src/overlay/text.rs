@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use ab_glyph::{Font, FontArc, Glyph, PxScale, ScaleFont};
 use tiny_skia::{Color, Pixmap};
 
@@ -37,18 +35,26 @@ pub struct Text {
     faces: [Face; 3],
 }
 
-/// Windows faces with Chinese, in the order the settings window also prefers.
-const CJK_FACES: [(&str, u32); 4] = [("Deng.ttf", 0), ("msyh.ttc", 0), ("simhei.ttf", 0), ("simsun.ttc", 0)];
+#[cfg(windows)]
+const MAIN_FACES: [[&str; 1]; 3] = [["segoeui.ttf"], ["seguisb.ttf"], ["segoeuib.ttf"]];
 
-fn load(dir: &Path, file: &str) -> FontArc {
-    let path = dir.join(file);
-    let bytes = std::fs::read(&path).unwrap_or_default();
+#[cfg(target_os = "linux")]
+const MAIN_FACES: [[&str; 3]; 3] = [
+    ["DejaVuSans.ttf", "LiberationSans-Regular.ttf", "NotoSans-Regular.ttf"],
+    ["DejaVuSans.ttf", "LiberationSans-Regular.ttf", "NotoSans-Regular.ttf"],
+    ["DejaVuSans-Bold.ttf", "LiberationSans-Bold.ttf", "NotoSans-Bold.ttf"],
+];
+
+fn load(candidates: &[&str]) -> FontArc {
+    let bytes = crate::paths::font_path(candidates)
+        .and_then(|path| std::fs::read(path).ok())
+        .unwrap_or_default();
     FontArc::try_from_vec(bytes).unwrap_or_else(|_| FontArc::try_from_vec(Vec::new()).expect("empty font"))
 }
 
-fn load_cjk(dir: &Path) -> Option<FontArc> {
-    CJK_FACES.iter().find_map(|(file, index)| {
-        let bytes = std::fs::read(dir.join(file)).ok()?;
+fn load_cjk() -> Option<FontArc> {
+    crate::paths::CJK_FACES.iter().find_map(|(names, index)| {
+        let bytes = std::fs::read(crate::paths::font_path(names)?).ok()?;
         let font = ab_glyph::FontVec::try_from_vec_and_index(bytes, *index).ok()?;
         Some(FontArc::new(font))
     })
@@ -72,13 +78,13 @@ fn pick(face: &Face, ch: char) -> (&FontArc, ab_glyph::GlyphId) {
 }
 
 impl Text {
-    pub fn load(fonts_dir: &Path) -> Self {
-        let cjk = load_cjk(fonts_dir);
+    pub fn load() -> Self {
+        let cjk = load_cjk();
         Self {
             faces: [
-                Face { main: load(fonts_dir, "segoeui.ttf"), cjk: cjk.clone() },
-                Face { main: load(fonts_dir, "seguisb.ttf"), cjk: cjk.clone() },
-                Face { main: load(fonts_dir, "segoeuib.ttf"), cjk },
+                Face { main: load(&MAIN_FACES[0]), cjk: cjk.clone() },
+                Face { main: load(&MAIN_FACES[1]), cjk: cjk.clone() },
+                Face { main: load(&MAIN_FACES[2]), cjk },
             ],
         }
     }
@@ -180,7 +186,7 @@ mod tests {
 
     #[test]
     fn chinese_comes_from_a_fallback_face() {
-        let text = Text::load(&crate::paths::system_fonts());
+        let text = Text::load();
         let face = text.face(Weight::Semibold);
         let Some(_) = &face.cjk else {
             eprintln!("no Chinese face in the system fonts: nothing to check");

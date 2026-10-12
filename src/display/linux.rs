@@ -47,6 +47,11 @@ pub fn displays() -> Vec<DisplayMap> {
     if out.is_empty() {
         vec![map(0, whole, true, scale)]
     } else {
+        if !out.iter().any(|display| display.primary) {
+            if let Some(first) = out.first_mut() {
+                first.primary = true;
+            }
+        }
         out
     }
 }
