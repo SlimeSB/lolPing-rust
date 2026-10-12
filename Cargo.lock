@@ -2593,6 +2593,7 @@ dependencies = [
  "hkdf",
  "image",
  "k256",
+ "libc",
  "ogg",
  "opus-rs",
  "parking_lot",

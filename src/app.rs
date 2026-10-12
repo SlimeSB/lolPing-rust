@@ -2,6 +2,7 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde_json::{Map, Value};
+#[cfg(windows)]
 use windows::Win32::Globalization::GetUserDefaultLocaleName;
 
 use crate::audio::Audio;
@@ -936,6 +937,7 @@ fn random_tag_color() -> u32 {
     nanos % 8
 }
 
+#[cfg(windows)]
 pub(crate) fn system_locale() -> String {
     let mut buffer = [0u16; 85];
     let len = unsafe { GetUserDefaultLocaleName(&mut buffer) };
@@ -943,4 +945,13 @@ pub(crate) fn system_locale() -> String {
         return String::new();
     }
     String::from_utf16_lossy(&buffer[..(len - 1) as usize])
+}
+
+#[cfg(target_os = "linux")]
+pub(crate) fn system_locale() -> String {
+    let raw = std::env::var("LC_ALL")
+        .or_else(|_| std::env::var("LC_MESSAGES"))
+        .or_else(|_| std::env::var("LANG"))
+        .unwrap_or_default();
+    raw.split(['.', '@']).next().unwrap_or_default().replace('_', "-")
 }

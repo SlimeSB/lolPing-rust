@@ -2,6 +2,12 @@ fn main() {
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("windows") {
         return;
     }
+    #[cfg(windows)]
+    embed();
+}
+
+#[cfg(windows)]
+fn embed() {
     println!("cargo:rerun-if-changed=build/icon.ico");
     let mut res = winresource::WindowsResource::new();
     res.set_icon("build/icon.ico");

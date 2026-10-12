@@ -5,7 +5,9 @@ use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
+#[cfg(windows)]
 use windows::core::{PCWSTR, PWSTR};
+#[cfg(windows)]
 use windows::Win32::System::Registry::{
     RegCloseKey, RegEnumKeyExW, RegOpenKeyExW, RegQueryValueExW, HKEY, HKEY_LOCAL_MACHINE, KEY_READ, REG_MULTI_SZ,
     REG_VALUE_TYPE,
@@ -229,11 +231,45 @@ fn broadcast_targets() -> Vec<Ipv4Addr> {
     out
 }
 
+#[cfg(windows)]
 fn wide(s: &str) -> Vec<u16> {
     s.encode_utf16().chain(std::iter::once(0)).collect()
 }
 
+#[cfg(target_os = "linux")]
+fn interface_addresses() -> Vec<(Ipv4Addr, Ipv4Addr)> {
+    let mut out = Vec::new();
+    let mut head: *mut libc::ifaddrs = std::ptr::null_mut();
+    if unsafe { libc::getifaddrs(&mut head) } != 0 {
+        return out;
+    }
+    let mut entry = head;
+    while !entry.is_null() {
+        let node = unsafe { &*entry };
+        if !node.ifa_addr.is_null() && unsafe { (*node.ifa_addr).sa_family } as i32 == libc::AF_INET {
+            if let (Some(ip), Some(mask)) = (sockaddr_v4(node.ifa_addr), sockaddr_v4(node.ifa_netmask)) {
+                if !ip.is_unspecified() && !ip.is_loopback() && !ip.is_broadcast() {
+                    out.push((ip, mask));
+                }
+            }
+        }
+        entry = node.ifa_next;
+    }
+    unsafe { libc::freeifaddrs(head) };
+    out
+}
+
+#[cfg(target_os = "linux")]
+fn sockaddr_v4(address: *const libc::sockaddr) -> Option<Ipv4Addr> {
+    if address.is_null() {
+        return None;
+    }
+    let sin = unsafe { &*(address as *const libc::sockaddr_in) };
+    Some(Ipv4Addr::from(u32::from_be(sin.sin_addr.s_addr)))
+}
+
 /// Current IPv4 address and netmask per interface, from the TCP/IP registry key the OS keeps them in.
+#[cfg(windows)]
 fn interface_addresses() -> Vec<(Ipv4Addr, Ipv4Addr)> {
     const INTERFACES: &str = r"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces";
     let mut out = Vec::new();
@@ -274,6 +310,7 @@ fn interface_addresses() -> Vec<(Ipv4Addr, Ipv4Addr)> {
     out
 }
 
+#[cfg(windows)]
 unsafe fn multi_sz(key: HKEY, name: &str) -> Option<Vec<String>> {
     let name = wide(name);
     let mut size = 0u32;

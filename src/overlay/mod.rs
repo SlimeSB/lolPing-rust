@@ -10,6 +10,7 @@ use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 use tiny_skia::Pixmap;
+#[cfg(windows)]
 use windows::Win32::UI::WindowsAndMessaging::{DispatchMessageW, MSG, PM_REMOVE, PeekMessageW, TranslateMessage};
 
 use crate::display::{self, DisplayMap};
@@ -126,6 +127,17 @@ fn wheel_items(kind: WheelKind, visuals: &Visuals, paths: &Paths) -> Vec<WheelIt
     }
 }
 
+#[cfg(windows)]
+fn pump_messages() {
+    let mut msg = MSG::default();
+    unsafe {
+        while PeekMessageW(&mut msg, None, 0, 0, PM_REMOVE).as_bool() {
+            let _ = TranslateMessage(&msg);
+            DispatchMessageW(&msg);
+        }
+    }
+}
+
 fn run(rx: Receiver<Command>, events: Sender<Event>, paths: Paths) {
     let maps = display::displays();
     let mut runtimes: Vec<Runtime> = Vec::new();
@@ -147,7 +159,6 @@ fn run(rx: Receiver<Command>, events: Sender<Event>, paths: Paths) {
     let mut assets = Assets::new();
     let text = Text::load(&paths.fonts);
     let mut visuals = Visuals::default();
-    let mut msg = MSG::default();
     let mut was_active = false;
     let mut next_frame = Instant::now();
     // Survives the iteration boundary: a command handled while the loop waits must still repaint.
@@ -175,12 +186,8 @@ fn run(rx: Receiver<Command>, events: Sender<Event>, paths: Paths) {
             break;
         }
 
-        unsafe {
-            while PeekMessageW(&mut msg, None, 0, 0, PM_REMOVE).as_bool() {
-                let _ = TranslateMessage(&msg);
-                DispatchMessageW(&msg);
-            }
-        }
+        #[cfg(windows)]
+        pump_messages();
 
         let now = Instant::now();
         let mut active = false;
