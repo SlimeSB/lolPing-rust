@@ -1,6 +1,6 @@
 name: Release
 
-# Push a tag that matches Cargo.toml's version (for example v0.5.1) to build the Windows zip and publish it.
+# Push a tag that matches Cargo.toml's version (for example v0.5.1) to build both packages and publish them.
 on:
   push:
     tags: ['v*']
@@ -9,8 +9,17 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    runs-on: windows-latest
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 22.04 builds against glibc 2.35, so the binary still starts on older distributions.
+          - runner: ubuntu-22.04
+            suffix: linux-x86_64.tar.gz
+          - runner: windows-latest
+            suffix: win64.zip
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -26,13 +35,34 @@ jobs:
             exit 1
           fi
           echo "VERSION=$version" >> "$GITHUB_ENV"
+      # GTK draws the tray icon, and the crates in Cargo.toml link against the rest.
+      - name: Install the Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libayatana-appindicator3-dev libxkbcommon-dev libasound2-dev
       - run: cargo build --locked --release
       # The app reads its icons, sounds and emotes from the assets folder beside the exe, so the two ship together.
       - name: Package the exe with its assets
+        if: runner.os == 'Windows'
         shell: pwsh
-        run: Compress-Archive -Path target/release/lolPing.exe, assets -DestinationPath "lolPing-$env:VERSION-win64.zip"
+        run: Compress-Archive -Path target/release/lolPing.exe, assets -DestinationPath "lolPing-$env:VERSION-${{ matrix.suffix }}"
+      - name: Package the binary with its assets
+        if: runner.os == 'Linux'
+        run: tar -czf "lolPing-$VERSION-${{ matrix.suffix }}" -C target/release lolPing -C "$GITHUB_WORKSPACE" assets
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lolPing-${{ matrix.suffix }}
+          path: lolPing-*
+          if-no-files-found: error
+  release:
+    needs: package
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
       - name: Create the release
-        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --title "lolPing $VERSION" --generate-notes "lolPing-$VERSION-win64.zip"
+        run: gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "lolPing ${GITHUB_REF_NAME#v}" --generate-notes lolPing-*
