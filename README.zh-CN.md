@@ -15,7 +15,6 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/SlimeSB/lolPing-rust/actions/workflows/ci.yml"><img src="https://github.com/SlimeSB/lolPing-rust/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/SlimeSB/lolPing-rust/releases/latest"><img src="https://img.shields.io/github/v/release/SlimeSB/lolPing-rust" alt="最新版本"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/SlimeSB/lolPing-rust" alt="MIT 许可证"></a>
 </p>
@@ -114,7 +113,7 @@ cargo run
 
 ### 发布新版本
 
-修改 `Cargo.toml` 中的 `version`，提交，然后推送一个与之匹配的标签（例如 `v0.6.0`）。Release 工作流会跑测试、构建 `lolPing.exe`，并把 `lolPing-<version>-win64.zip`（exe 连同 `assets`）附到 GitHub Release 上。标签和 `Cargo.toml` 里的版本号对不上时，工作流会在发布任何东西之前停下。版本号在编译时写入 exe，显示在**设置 → 关于**中。
+修改 `Cargo.toml` 中的 `version`，提交，然后推送一个与之匹配的标签（例如 `v0.6.0`）。Release 工作流会构建 `lolPing.exe`，并把 `lolPing-<version>-win64.zip`（exe 连同 `assets`）附到 GitHub Release 上。标签和 `Cargo.toml` 里的版本号对不上时，工作流会在发布任何东西之前停下。版本号在编译时写入 exe，显示在**设置 → 关于**中。
 
 ## 工作原理
 

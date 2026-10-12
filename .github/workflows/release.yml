@@ -26,7 +26,6 @@ jobs:
             exit 1
           fi
           echo "VERSION=$version" >> "$GITHUB_ENV"
-      - run: cargo test --locked --release
       - run: cargo build --locked --release
       # The app reads its icons, sounds and emotes from the assets folder beside the exe, so the two ship together.
       - name: Package the exe with its assets

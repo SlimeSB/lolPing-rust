@@ -15,7 +15,6 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/SlimeSB/lolPing-rust/actions/workflows/ci.yml"><img src="https://github.com/SlimeSB/lolPing-rust/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/SlimeSB/lolPing-rust/releases/latest"><img src="https://img.shields.io/github/v/release/SlimeSB/lolPing-rust" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/SlimeSB/lolPing-rust" alt="MIT license"></a>
 </p>
@@ -114,7 +113,7 @@ cargo run
 
 ### Releasing
 
-Bump `version` in `Cargo.toml`, commit, then push a matching tag such as `v0.6.0`. The Release workflow runs the tests, builds `lolPing.exe` and attaches `lolPing-<version>-win64.zip` (the exe together with `assets`) to a GitHub release. A tag that doesn't match the version in `Cargo.toml` stops the workflow before anything is published. The version is baked into the exe at compile time and shows up in Settings → About.
+Bump `version` in `Cargo.toml`, commit, then push a matching tag such as `v0.6.0`. The Release workflow builds `lolPing.exe` and attaches `lolPing-<version>-win64.zip` (the exe together with `assets`) to a GitHub release. A tag that doesn't match the version in `Cargo.toml` stops the workflow before anything is published. The version is baked into the exe at compile time and shows up in Settings → About.
 
 ## How it works
 
