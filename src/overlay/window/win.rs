@@ -82,10 +82,6 @@ impl LayeredWindow {
         }
     }
 
-    pub fn hwnd(&self) -> HWND {
-        self.hwnd
-    }
-
     pub fn size(&self) -> (i32, i32) {
         (self.width, self.height)
     }
