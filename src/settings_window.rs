@@ -18,16 +18,13 @@ use crate::settings::model::{self, patch_clashes, EmoteTrigger, Settings};
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum HelperState {
     Running,
-    Starting,
     Failed,
-    NoAccess,
 }
 
 #[derive(Clone, Debug)]
 pub struct Status {
     pub enabled: bool,
     pub helper: HelperState,
-    pub stale_access: bool,
     pub first_run: bool,
     pub problems: Vec<String>,
 }

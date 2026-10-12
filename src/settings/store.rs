@@ -1,6 +1,6 @@
 use std::fs;
 use std::io;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::sync::Arc;
 use std::thread::{self, JoinHandle};
@@ -230,60 +230,6 @@ fn transient_rename_error(err: &io::Error) -> bool {
     matches!(err.raw_os_error(), Some(1 | 5 | 13 | 32 | 33 | 170)) || err.kind() == io::ErrorKind::PermissionDenied
 }
 
-/// Resolves a URL pathname to a file inside `root`; None if it escapes the root or is malformed.
-pub fn resolve_inside(root: &Path, url_path: &str) -> Option<PathBuf> {
-    let decoded = percent_decode(url_path)?;
-    let root = normalize_path(root);
-    let file = normalize_path(&root.join(decoded));
-    let rel = file.strip_prefix(&root).ok()?;
-    if rel.as_os_str().is_empty() || rel.components().next() == Some(Component::ParentDir) {
-        return None;
-    }
-    Some(file)
-}
-
-fn percent_decode(s: &str) -> Option<String> {
-    let bytes = s.as_bytes();
-    let mut out = Vec::with_capacity(bytes.len());
-    let mut i = 0;
-    while i < bytes.len() {
-        if bytes[i] == b'%' {
-            if i + 2 >= bytes.len() {
-                return None;
-            }
-            out.push(hex_value(bytes[i + 1])? << 4 | hex_value(bytes[i + 2])?);
-            i += 3;
-        } else {
-            out.push(bytes[i]);
-            i += 1;
-        }
-    }
-    String::from_utf8(out).ok()
-}
-
-fn hex_value(b: u8) -> Option<u8> {
-    match b {
-        b'0'..=b'9' => Some(b - b'0'),
-        b'a'..=b'f' => Some(b - b'a' + 10),
-        b'A'..=b'F' => Some(b - b'A' + 10),
-        _ => None,
-    }
-}
-
-fn normalize_path(p: &Path) -> PathBuf {
-    let mut out = PathBuf::new();
-    for c in p.components() {
-        match c {
-            Component::CurDir => {}
-            Component::ParentDir => {
-                out.pop();
-            }
-            other => out.push(other.as_os_str()),
-        }
-    }
-    out
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -371,16 +317,5 @@ mod tests {
         upgraded.load();
         assert!(!upgraded.emote_key_clashed);
         let _ = fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn resolve_inside_keeps_paths_in_the_root() {
-        let root = PathBuf::from("C:/data/lolping");
-        assert_eq!(resolve_inside(&root, "emotes/a.webp"), Some(PathBuf::from("C:/data/lolping/emotes/a.webp")));
-        assert_eq!(resolve_inside(&root, "emotes/../a.webp"), Some(PathBuf::from("C:/data/lolping/a.webp")));
-        assert_eq!(resolve_inside(&root, "../secret"), None);
-        assert_eq!(resolve_inside(&root, "%2e%2e/secret"), None);
-        assert_eq!(resolve_inside(&root, ""), None);
-        assert_eq!(resolve_inside(&root, "%zz"), None);
     }
 }

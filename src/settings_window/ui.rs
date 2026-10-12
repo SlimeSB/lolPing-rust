@@ -23,7 +23,6 @@ pub(super) fn draw(app: &mut App, ui: &mut egui::Ui) {
             let t = app.t();
             ui.heading(t.page_title);
             ui.add_space(6.0);
-            permission_card(app, ui, t);
             status_card(app, ui, t);
             general(app, ui, t);
             pings_section(app, ui, t);
@@ -87,23 +86,6 @@ fn note(ui: &mut egui::Ui, app: &App) {
     }
 }
 
-fn permission_card(app: &mut App, ui: &mut egui::Ui, t: &'static Strings) {
-    if app.status.helper != HelperState::NoAccess {
-        return;
-    }
-    let stale = app.status.stale_access;
-    let steps = if stale { t.perm_stale_steps } else { t.perm_steps };
-    ui.group(|ui| {
-        ui.strong(if stale { t.perm_stale_title } else { t.perm_title });
-        for step in steps {
-            ui.weak(*step);
-        }
-        if ui.button(t.perm_retry).clicked() {
-            let _ = app.events.send(UiEvent::RetryHelper);
-        }
-    });
-}
-
 fn status_card(app: &mut App, ui: &mut egui::Ui, t: &'static Strings) {
     let enabled = app.status.enabled;
     let helper = app.status.helper;
@@ -111,17 +93,15 @@ fn status_card(app: &mut App, ui: &mut egui::Ui, t: &'static Strings) {
     let hotkey = hotkey_label(app.settings.toggle_hotkey);
     let (title, hint) = match helper {
         HelperState::Failed => (t.status_helper_stopped, t.status_failed_hint.to_string()),
-        HelperState::NoAccess => (t.status_no_access, t.status_no_access_hint.to_string()),
-        _ => (if enabled { t.status_on } else { t.status_off }, t.status_hint(&trigger, &hotkey, enabled)),
+        HelperState::Running => (if enabled { t.status_on } else { t.status_off }, t.status_hint(&trigger, &hotkey, enabled)),
     };
     row(ui, title, Some(hint.as_str()), |ui| match helper {
-        HelperState::NoAccess => {}
         HelperState::Failed => {
             if ui.button(t.restart_helper).clicked() {
                 let _ = app.events.send(UiEvent::RetryHelper);
             }
         }
-        _ => {
+        HelperState::Running => {
             let mut on = enabled;
             let label = if on { t.on } else { t.off };
             if ui.checkbox(&mut on, label).changed() {

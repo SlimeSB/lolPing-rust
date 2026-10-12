@@ -714,7 +714,6 @@ impl App {
         Status {
             enabled: self.enabled,
             helper: if self.hook.is_some() { HelperState::Running } else { HelperState::Failed },
-            stale_access: false,
             first_run: self.store.first_run,
             problems: self.problems(),
         }

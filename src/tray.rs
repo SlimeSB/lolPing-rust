@@ -24,7 +24,6 @@ pub enum TrayMode {
     On,
     Off,
     Failed,
-    NoAccess,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -152,19 +151,16 @@ impl Tray {
     fn render(&mut self) {
         let t = self.text;
         let failed = self.mode == TrayMode::Failed;
-        let no_access = self.mode == TrayMode::NoAccess;
-        let icon = if failed || no_access { &self.icons.failed } else if self.mode == TrayMode::On { &self.icons.on } else { &self.icons.off };
+        let icon = if failed { &self.icons.failed } else if self.mode == TrayMode::On { &self.icons.on } else { &self.icons.off };
         let _ = self.icon.set_icon(Some(icon.clone()));
         let tooltip = if failed {
             t.tray_tip_failed.to_string()
-        } else if no_access {
-            t.tray_tip_no_access.to_string()
         } else {
             t.tray_tip(self.enabled)
         };
         let _ = self.icon.set_tooltip(Some(tooltip));
 
-        let toggle = CheckMenuItem::with_id("toggle", t.tray_enabled, !failed && !no_access, self.enabled, None);
+        let toggle = CheckMenuItem::with_id("toggle", t.tray_enabled, !failed, self.enabled, None);
         let mut items: Vec<Box<dyn tray_icon::menu::IsMenuItem>> = vec![Box::new(toggle.clone())];
         if failed {
             items.push(Box::new(MenuItem::with_id("restart", t.tray_restart, true, None)));

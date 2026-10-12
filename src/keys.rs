@@ -128,42 +128,6 @@ pub fn hotkey_label(h: Hotkey) -> String {
     hotkey_parts(h).join(" + ")
 }
 
-const ACCEL_NAMES: &[(u32, &str)] = &[
-    (0x20, "Space"), (0x0d, "Enter"), (0x09, "Tab"), (0x08, "Backspace"), (0x2d, "Insert"),
-    (0x2e, "Delete"), (0x24, "Home"), (0x23, "End"), (0x21, "PageUp"), (0x22, "PageDown"),
-    (0x25, "Left"), (0x26, "Up"), (0x27, "Right"), (0x28, "Down"), (0xc0, "`"), (0xbd, "-"),
-    (0xbb, "="), (0xdb, "["), (0xdd, "]"), (0xdc, "\\"), (0xba, ";"), (0xde, "'"), (0xbc, ","),
-    (0xbe, "."), (0xbf, "/"),
-];
-
-/// Electron accelerator string, used only for conflict checks. None when the key has no accelerator name.
-pub fn hotkey_to_accelerator(h: Hotkey) -> Option<String> {
-    let key = if (0x41..=0x5a).contains(&h.vk) || (0x30..=0x39).contains(&h.vk) {
-        (h.vk as u8 as char).to_string()
-    } else if (0x70..=0x87).contains(&h.vk) {
-        format!("F{}", h.vk - 0x6f)
-    } else if (0x60..=0x69).contains(&h.vk) {
-        format!("num{}", h.vk - 0x60)
-    } else {
-        ACCEL_NAMES.iter().find(|(vk, _)| *vk == h.vk)?.1.to_string()
-    };
-    let mut mods: Vec<&str> = Vec::new();
-    if h.mods & MOD_CTRL != 0 {
-        mods.push("Control");
-    }
-    if h.mods & MOD_ALT != 0 {
-        mods.push("Alt");
-    }
-    if h.mods & MOD_SHIFT != 0 {
-        mods.push("Shift");
-    }
-    if h.mods & MOD_WIN != 0 {
-        mods.push("Super");
-    }
-    mods.push(&key);
-    Some(mods.join("+"))
-}
-
 pub fn event_mods(ctrl: bool, alt: bool, shift: bool, meta: bool) -> u32 {
     (if ctrl { MOD_CTRL } else { 0 })
         | (if alt { MOD_ALT } else { 0 })
@@ -193,8 +157,6 @@ mod tests {
 
         let h = Hotkey { mods: MOD_CTRL | MOD_ALT, vk: 0x50 };
         assert_eq!(hotkey_label(h), "Ctrl + Alt + P");
-        assert_eq!(hotkey_to_accelerator(h).unwrap(), "Control+Alt+P");
-        assert_eq!(hotkey_to_accelerator(Hotkey { mods: MOD_WIN, vk: 0x25 }).unwrap(), "Super+Left");
         assert_eq!(event_mods(true, false, true, false), MOD_CTRL | MOD_SHIFT);
     }
 }
