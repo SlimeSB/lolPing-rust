@@ -333,10 +333,17 @@ mod tests {
     use super::*;
     use crate::room::crypto::RoomKeys;
     use parking_lot::Mutex;
+    use std::sync::atomic::{AtomicU16, Ordering};
     use std::sync::mpsc::channel;
 
-    const A_PORT: u16 = 47_501;
-    const B_PORT: u16 = 47_502;
+    static NEXT_PORT: AtomicU16 = AtomicU16::new(47_501);
+
+    /// A port pair of its own, so a test that dies cannot keep the next one from binding.
+    fn ports() -> (u16, u16) {
+        let base = NEXT_PORT.fetch_add(2, Ordering::Relaxed);
+        (base, base + 1)
+    }
+
     /// Generous: the whole suite runs at once, and a starved poll thread is not a bug.
     const WAIT: Duration = Duration::from_secs(15);
     const RESEND: Duration = Duration::from_millis(250);
@@ -420,16 +427,17 @@ mod tests {
     #[test]
     fn two_transports_exchange_a_packet_both_ways() {
         let _serial = SERIAL.lock();
+        let (a_port, b_port) = ports();
         let (a_tx, a_rx) = channel();
         let (b_tx, b_rx) = channel();
-        let a = start_with(a_tx, opts(A_PORT, B_PORT)).expect("a binds");
-        let b = start_with(b_tx, opts(B_PORT, A_PORT)).expect("b binds");
+        let a = start_with(a_tx, opts(a_port, b_port)).expect("a binds");
+        let b = start_with(b_tx, opts(b_port, a_port)).expect("b binds");
         until(&a_rx, |s| status(s, Link::Ok));
 
-        let at_b = until_packet(&b_rx, || a.send_to(&format!("lan:127.0.0.1:{B_PORT}"), b"from-a"), "from-a");
+        let at_b = until_packet(&b_rx, || a.send_to(&format!("lan:127.0.0.1:{b_port}"), b"from-a"), "from-a");
         assert_eq!(packets(&at_b)[0], b"from-a");
-        assert!(at_b.iter().any(|e| matches!(e, TransportEvent::Packet { peer, .. } if peer == &format!("lan:127.0.0.1:{A_PORT}"))));
-        let at_a = until_packet(&a_rx, || b.send_to(&format!("lan:127.0.0.1:{A_PORT}"), b"from-b"), "from-b");
+        assert!(at_b.iter().any(|e| matches!(e, TransportEvent::Packet { peer, .. } if peer == &format!("lan:127.0.0.1:{a_port}"))));
+        let at_a = until_packet(&a_rx, || b.send_to(&format!("lan:127.0.0.1:{a_port}"), b"from-b"), "from-b");
         assert_eq!(packets(&at_a)[0], b"from-b");
 
         let seeded = until_packet(&b_rx, || a.broadcast(b"seed"), "the seed broadcast");
@@ -441,11 +449,12 @@ mod tests {
     #[test]
     fn caps_junk_from_one_address_before_decryption() {
         let _serial = SERIAL.lock();
+        let (a_port, b_port) = ports();
         let (b_tx, b_rx) = channel();
-        let b = start_with(b_tx, opts(B_PORT, A_PORT)).expect("b binds");
+        let b = start_with(b_tx, opts(b_port, a_port)).expect("b binds");
         let junk = UdpSocket::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0)).expect("junk socket");
         for _ in 0..500 {
-            let _ = junk.send_to(&[0u8; 64], SocketAddrV4::new(Ipv4Addr::LOCALHOST, B_PORT));
+            let _ = junk.send_to(&[0u8; 64], SocketAddrV4::new(Ipv4Addr::LOCALHOST, b_port));
         }
         thread::sleep(Duration::from_millis(200));
         let seen = until(&b_rx, |s| !packets(s).is_empty());
@@ -457,10 +466,11 @@ mod tests {
     #[test]
     fn oversized_and_empty_datagrams_are_dropped_without_panicking() {
         let _serial = SERIAL.lock();
+        let (a_port, b_port) = ports();
         let (b_tx, b_rx) = channel();
-        let b = start_with(b_tx, opts(B_PORT, A_PORT)).expect("b binds");
+        let b = start_with(b_tx, opts(b_port, a_port)).expect("b binds");
         let junk = UdpSocket::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0)).expect("junk socket");
-        let to_b = SocketAddrV4::new(Ipv4Addr::LOCALHOST, B_PORT);
+        let to_b = SocketAddrV4::new(Ipv4Addr::LOCALHOST, b_port);
         let _ = junk.send_to(&[0u8; 1500], to_b);
         let _ = junk.send_to(&[0u8; 3000], to_b);
         let _ = junk.send_to(&[], to_b);
@@ -474,9 +484,10 @@ mod tests {
     #[test]
     fn a_taken_port_is_unavailable() {
         let _serial = SERIAL.lock();
-        let blocker = UdpSocket::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, A_PORT)).expect("blocker binds");
+        let (a_port, b_port) = ports();
+        let blocker = UdpSocket::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, a_port)).expect("blocker binds");
         let (tx, rx) = channel();
-        assert!(start_with(tx, opts(A_PORT, B_PORT)).is_none());
+        assert!(start_with(tx, opts(a_port, b_port)).is_none());
         assert!(matches!(rx.try_recv(), Ok(TransportEvent::Status(Link::Unavailable))));
         drop(blocker);
     }
@@ -484,37 +495,39 @@ mod tests {
     #[test]
     fn stop_flushes_a_pending_packet_and_frees_the_port() {
         let _serial = SERIAL.lock();
+        let (a_port, b_port) = ports();
         let (a_tx, a_rx) = channel();
         let (b_tx, b_rx) = channel();
-        let a = start_with(a_tx, opts(A_PORT, B_PORT)).expect("a binds");
-        let b = start_with(b_tx, opts(B_PORT, A_PORT)).expect("b binds");
+        let a = start_with(a_tx, opts(a_port, b_port)).expect("a binds");
+        let b = start_with(b_tx, opts(b_port, a_port)).expect("b binds");
         until(&a_rx, |s| status(s, Link::Ok));
         // Three copies: one datagram can be dropped on a machine running the whole suite at once.
         for _ in 0..3 {
-            a.send_to(&format!("lan:127.0.0.1:{B_PORT}"), b"bye");
+            a.send_to(&format!("lan:127.0.0.1:{b_port}"), b"bye");
             thread::sleep(Duration::from_millis(30));
         }
         a.shutdown();
         let seen = until(&b_rx, |s| !packets(s).is_empty());
         assert_eq!(packets(&seen)[0], b"bye");
-        UdpSocket::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, A_PORT)).expect("port is free again");
+        UdpSocket::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, a_port)).expect("port is free again");
         b.shutdown();
     }
 
     #[test]
     fn stop_then_start_rebinds_on_the_same_handle() {
         let _serial = SERIAL.lock();
+        let (a_port, b_port) = ports();
         let (a_tx, a_rx) = channel();
         let (b_tx, b_rx) = channel();
-        let a = start_with(a_tx, opts(A_PORT, B_PORT)).expect("a binds");
-        let b = start_with(b_tx, opts(B_PORT, A_PORT)).expect("b binds");
+        let a = start_with(a_tx, opts(a_port, b_port)).expect("a binds");
+        let b = start_with(b_tx, opts(b_port, a_port)).expect("b binds");
         until(&a_rx, |s| status(s, Link::Ok));
         a.stop();
         until(&a_rx, |s| status(s, Link::Unavailable));
         a.start(keys());
         until(&a_rx, |s| status(s, Link::Ok));
 
-        let seen = until_packet(&b_rx, || a.send_to(&format!("lan:127.0.0.1:{B_PORT}"), b"restarted"), "restarted");
+        let seen = until_packet(&b_rx, || a.send_to(&format!("lan:127.0.0.1:{b_port}"), b"restarted"), "restarted");
         assert_eq!(packets(&seen)[0], b"restarted");
         a.shutdown();
         b.shutdown();
@@ -523,15 +536,16 @@ mod tests {
     #[test]
     fn wake_reopens_the_socket_and_keeps_working() {
         let _serial = SERIAL.lock();
+        let (a_port, b_port) = ports();
         let (a_tx, a_rx) = channel();
         let (b_tx, b_rx) = channel();
-        let a = start_with(a_tx, opts(A_PORT, B_PORT)).expect("a binds");
-        let b = start_with(b_tx, opts(B_PORT, A_PORT)).expect("b binds");
+        let a = start_with(a_tx, opts(a_port, b_port)).expect("a binds");
+        let b = start_with(b_tx, opts(b_port, a_port)).expect("b binds");
         until(&a_rx, |s| status(s, Link::Ok));
         a.wake();
         until(&a_rx, |s| status(s, Link::Connecting) && status(s, Link::Ok));
 
-        let seen = until_packet(&b_rx, || a.send_to(&format!("lan:127.0.0.1:{B_PORT}"), b"after-wake"), "after-wake");
+        let seen = until_packet(&b_rx, || a.send_to(&format!("lan:127.0.0.1:{b_port}"), b"after-wake"), "after-wake");
         assert_eq!(packets(&seen)[0], b"after-wake");
         a.shutdown();
         b.shutdown();
