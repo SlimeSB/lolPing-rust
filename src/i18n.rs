@@ -79,7 +79,6 @@ strings_table! {
     nav_emotes: &'static str,
     nav_room: &'static str,
     nav_app: &'static str,
-    tagline: &'static str,
     page_title: &'static str,
     status_helper_stopped: &'static str,
     status_on: &'static str,
@@ -109,8 +108,6 @@ strings_table! {
     wheel_reset: &'static str,
     all_pings: &'static str,
     all_pings_desc: &'static str,
-    wheel_center: &'static str,
-    wheel_new: &'static str,
     slot_names: &'static [&'static str],
     emote_key: &'static str,
     emote_key_desc: &'static str,
@@ -131,8 +128,6 @@ strings_table! {
     language_desc: &'static str,
     language_auto: &'static str,
     about: &'static str,
-    github_page: &'static str,
-    open_settings_folder: &'static str,
     problems: &'static str,
     known_limitations: &'static str,
     press_key: &'static str,
@@ -141,11 +136,7 @@ strings_table! {
     hint_need_modifier: &'static str,
     keyboard: &'static str,
     mouse: &'static str,
-    mouse_back: &'static str,
-    mouse_forward: &'static str,
-    custom_key: &'static str,
     custom_key_menu: &'static str,
-    choose_key: &'static str,
     mouse4: &'static str,
     mouse5: &'static str,
     room_name: &'static str,
@@ -158,7 +149,6 @@ strings_table! {
     room_create: &'static str,
     room_invalid: &'static str,
     room_mistyped: &'static str,
-    room_join_failed: &'static str,
     room_share_desc: &'static str,
     room_joining: &'static str,
     room_copy: &'static str,
@@ -199,8 +189,6 @@ strings_table! {
     problem_emote_key_clash: &'static str,
     toast_on: &'static str,
     toast_off: &'static str,
-    toast_helper_stopped: &'static str,
-    toast_helper_stopped_body: &'static str,
     tray_tip_failed: &'static str,
     tray_enabled: &'static str,
     tray_restart: &'static str,
@@ -250,14 +238,6 @@ impl Strings {
             format!("把信号拖到扇区上即可放置。拖到中心则设为 {trigger} + 单击发送的信号。")
         } else {
             format!("Drag a ping onto a slice to put it there. Drop it on the centre to make it the {trigger} + click ping.")
-        }
-    }
-
-    pub fn wheel_pick_hint(&self, name: &str) -> String {
-        if self.lang == LANG_ZH_CN {
-            format!("请单击一个扇区或中心来放置“{name}”。按 Esc 取消。")
-        } else {
-            format!("Now click a slice or the centre to place {name}. Esc cancels.")
         }
     }
 
@@ -405,14 +385,6 @@ impl Strings {
         }
     }
 
-    pub fn hotkey_taken(&self, hotkey: &str) -> String {
-        if self.lang == LANG_ZH_CN {
-            format!("{hotkey} 已被其他程序占用。")
-        } else {
-            format!("{hotkey} is already used by another app.")
-        }
-    }
-
     pub fn toast_toggle_hint(&self, hotkey: &str) -> String {
         if self.lang == LANG_ZH_CN {
             format!("{hotkey} 切换")
@@ -481,7 +453,6 @@ static EN: Strings = Strings {
     nav_emotes: "Emotes",
     nav_room: "Room",
     nav_app: "App",
-    tagline: "Ping anywhere",
     page_title: "Settings",
     status_helper_stopped: "Input helper stopped",
     status_on: "Pinging is on",
@@ -511,8 +482,6 @@ static EN: Strings = Strings {
     wheel_reset: "Reset to default",
     all_pings: "All pings",
     all_pings_desc: "Click to preview. Drag onto the wheel to assign, or click a ping and then a slot.",
-    wheel_center: "CLICK",
-    wheel_new: "NEW",
     slot_names: &["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
     emote_key: "Emote key",
     emote_key_desc: "Hold this and drag to open the emote wheel. It can’t be the same as the trigger key.",
@@ -533,8 +502,6 @@ static EN: Strings = Strings {
     language_desc: "Follow Windows, or pick one",
     language_auto: "Follow Windows",
     about: "About",
-    github_page: "GitHub page",
-    open_settings_folder: "Open settings folder",
     problems: "Problems",
     known_limitations: "Known limitations",
     press_key: "Press a key…",
@@ -543,11 +510,7 @@ static EN: Strings = Strings {
     hint_need_modifier: "Add Ctrl, Alt or Win",
     keyboard: "Keyboard",
     mouse: "Mouse",
-    mouse_back: "back",
-    mouse_forward: "forward",
-    custom_key: "Custom key",
     custom_key_menu: "Custom key…",
-    choose_key: "Choose a key",
     mouse4: "Mouse 4",
     mouse5: "Mouse 5",
     room_name: "Your name",
@@ -560,7 +523,6 @@ static EN: Strings = Strings {
     room_create: "Create room",
     room_invalid: "That isn’t a room code.",
     room_mistyped: "This code looks mistyped.",
-    room_join_failed: "Couldn’t join the room. Try again.",
     room_share_desc: "Share this code with friends",
     room_joining: "Joining…",
     room_copy: "Copy code",
@@ -601,8 +563,6 @@ static EN: Strings = Strings {
     problem_emote_key_clash: "The emote key was the same as another lolPing key, so it was turned off.",
     toast_on: "Pings on",
     toast_off: "Pings off",
-    toast_helper_stopped: "Ping helper stopped",
-    toast_helper_stopped_body: "Right-click the tray icon to restart it",
     tray_tip_failed: "lolPing: input helper stopped",
     tray_enabled: "Enabled",
     tray_restart: "Restart input helper",
@@ -633,7 +593,6 @@ static ZH: Strings = Strings {
     nav_emotes: "表情",
     nav_room: "房间",
     nav_app: "应用",
-    tagline: "随处发信号",
     page_title: "设置",
     status_helper_stopped: "输入助手已停止",
     status_on: "信号已开启",
@@ -663,8 +622,6 @@ static ZH: Strings = Strings {
     wheel_reset: "恢复默认",
     all_pings: "全部信号",
     all_pings_desc: "单击可预览。拖到轮盘上即可分配，也可以先单击信号，再单击位置。",
-    wheel_center: "单击",
-    wheel_new: "新",
     slot_names: &["上", "右上", "右", "右下", "下", "左下", "左", "左上"],
     emote_key: "表情键",
     emote_key_desc: "按住此键并拖动以打开表情轮盘，不能与触发键相同。",
@@ -685,8 +642,6 @@ static ZH: Strings = Strings {
     language_desc: "跟随 Windows，或手动选择",
     language_auto: "跟随 Windows",
     about: "关于",
-    github_page: "GitHub 主页",
-    open_settings_folder: "打开设置文件夹",
     problems: "问题",
     known_limitations: "已知限制",
     press_key: "请按一个键…",
@@ -695,11 +650,7 @@ static ZH: Strings = Strings {
     hint_need_modifier: "请加上 Ctrl、Alt 或 Win",
     keyboard: "键盘",
     mouse: "鼠标",
-    mouse_back: "后退",
-    mouse_forward: "前进",
-    custom_key: "自定义按键",
     custom_key_menu: "自定义按键…",
-    choose_key: "选择一个键",
     mouse4: "鼠标侧键 4",
     mouse5: "鼠标侧键 5",
     room_name: "你的名字",
@@ -712,7 +663,6 @@ static ZH: Strings = Strings {
     room_create: "创建房间",
     room_invalid: "这不是房间码。",
     room_mistyped: "房间码好像输错了。",
-    room_join_failed: "无法加入房间，请重试。",
     room_share_desc: "把这个房间码分享给朋友",
     room_joining: "正在加入…",
     room_copy: "复制房间码",
@@ -753,8 +703,6 @@ static ZH: Strings = Strings {
     problem_emote_key_clash: "表情键与 lolPing 的另一个按键相同，已被关闭。",
     toast_on: "信号已开启",
     toast_off: "信号已关闭",
-    toast_helper_stopped: "信号助手已停止",
-    toast_helper_stopped_body: "右键单击托盘图标以重启",
     tray_tip_failed: "lolPing：输入助手已停止",
     tray_enabled: "已开启",
     tray_restart: "重启输入助手",
@@ -788,8 +736,8 @@ mod tests {
 
     #[test]
     fn key_count_matches_reference() {
-        // The reference table has 217 keys: 30 are methods here, and 11 macOS-only plus 27 updater keys are gone.
-        assert_eq!(Strings::FIELD_COUNT + 30, 217 - 11 - 27);
+        // The reference table has 217 keys: 28 are methods here, and 52 are gone (11 macOS-only, 27 updater, 14 unused).
+        assert_eq!(Strings::FIELD_COUNT + 28, 217 - 52);
     }
 
     #[test]
