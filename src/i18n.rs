@@ -92,6 +92,8 @@ strings_table! {
     custom_key_note: &'static str,
     drag_distance: &'static str,
     drag_distance_desc: &'static str,
+    game_check: &'static str,
+    game_check_desc: &'static str,
     toggle_shortcut: &'static str,
     toggle_shortcut_desc: &'static str,
     start_enabled: &'static str,
@@ -216,26 +218,6 @@ strings_table! {
     toast_room_full_body: &'static str,
     toast_no_code: &'static str,
     toast_no_code_body: &'static str,
-    update_now: &'static str,
-    whats_new: &'static str,
-    check_for_updates: &'static str,
-    checking: &'static str,
-    up_to_date: &'static str,
-    installing_update: &'static str,
-    update_toast_title: &'static str,
-    update_error_toast_title: &'static str,
-    restarting_to_update: &'static str,
-    update_mac_steps: &'static str,
-    update_mac_dialog: &'static str,
-    update_err_download: &'static str,
-    update_err_damaged: &'static str,
-    update_err_install: &'static str,
-    update_reason_unknown: &'static str,
-    retry: &'static str,
-    auto_update_check: &'static str,
-    auto_update_check_desc: &'static str,
-    tray_check_for_updates: &'static str,
-    tray_installing: &'static str,
 }
 
 impl Strings {
@@ -486,62 +468,6 @@ impl Strings {
             format!("{name} disconnected")
         }
     }
-
-    pub fn update_available(&self, v: &str) -> String {
-        if self.lang == LANG_ZH_CN {
-            format!("有新版本 lolPing {v}")
-        } else {
-            format!("lolPing {v} is available")
-        }
-    }
-
-    pub fn checked_at(&self, time: &str) -> String {
-        if self.lang == LANG_ZH_CN {
-            format!("检查于 {time}")
-        } else {
-            format!("Checked {time}")
-        }
-    }
-
-    pub fn downloading_update(&self, n: usize) -> String {
-        if self.lang == LANG_ZH_CN {
-            format!("正在下载更新… {n}%")
-        } else {
-            format!("Downloading update… {n}%")
-        }
-    }
-
-    pub fn update_toast_body(&self, v: &str) -> String {
-        if self.lang == LANG_ZH_CN {
-            format!("lolPing {v} 可以下载了。请从托盘菜单或设置中更新。")
-        } else {
-            format!("lolPing {v} is ready to download. Update from the tray menu or Settings.")
-        }
-    }
-
-    pub fn update_err_check(&self, reason: &str) -> String {
-        if self.lang == LANG_ZH_CN {
-            format!("无法检查更新：{reason}")
-        } else {
-            format!("Couldn’t check for updates: {reason}")
-        }
-    }
-
-    pub fn tray_update_to(&self, v: &str) -> String {
-        if self.lang == LANG_ZH_CN {
-            format!("更新到 {v}…")
-        } else {
-            format!("Update to {v}…")
-        }
-    }
-
-    pub fn tray_downloading(&self, n: usize) -> String {
-        if self.lang == LANG_ZH_CN {
-            format!("正在下载更新… {n}%")
-        } else {
-            format!("Downloading update… {n}%")
-        }
-    }
 }
 
 static EN: Strings = Strings {
@@ -568,6 +494,8 @@ static EN: Strings = Strings {
     custom_key_note: "This key won’t type in other apps while lolPing is on",
     drag_distance: "Drag distance",
     drag_distance_desc: "How far the mouse must move before the wheel opens",
+    game_check: "Pause in fullscreen apps",
+    game_check_desc: "Games and other fullscreen apps keep every click: trigger + click passes through there, and gestures resume on the desktop",
     toggle_shortcut: "Enable / disable shortcut",
     toggle_shortcut_desc: "Works anywhere, even while pinging is off",
     start_enabled: "Start enabled",
@@ -692,26 +620,6 @@ static EN: Strings = Strings {
     toast_room_full_body: "A room holds up to 8 people",
     toast_no_code: "No room code on the clipboard",
     toast_no_code_body: "Copy a code like PING-XXXXX-XXXXX first",
-    update_now: "Update",
-    whats_new: "What’s new",
-    check_for_updates: "Check for updates",
-    checking: "Checking…",
-    up_to_date: "lolPing is up to date",
-    installing_update: "Installing update…",
-    update_toast_title: "Update available",
-    update_error_toast_title: "Update error",
-    restarting_to_update: "Restarting to update…",
-    update_mac_steps: "lolPing downloads the update and opens it. Drag lolPing into Applications, choose Replace, then open it and allow Accessibility again.",
-    update_mac_dialog: "Drag lolPing into Applications and choose Replace. Then open it and allow Accessibility again. lolPing will quit now.",
-    update_err_download: "The download failed. Try again.",
-    update_err_damaged: "The download was damaged. Try again.",
-    update_err_install: "The update couldn’t be installed. Try again.",
-    update_reason_unknown: "no details",
-    retry: "Retry",
-    auto_update_check: "Check for updates automatically",
-    auto_update_check_desc: "Checks GitHub for a new version every few hours. Nothing downloads until you click Update.",
-    tray_check_for_updates: "Check for updates",
-    tray_installing: "Installing update…",
 };
 
 static ZH: Strings = Strings {
@@ -738,6 +646,8 @@ static ZH: Strings = Strings {
     custom_key_note: "lolPing 开启时，此键在其他程序中不会输入字符",
     drag_distance: "拖动距离",
     drag_distance_desc: "鼠标移动多远后才打开轮盘",
+    game_check: "全屏程序中暂停",
+    game_check_desc: "游戏等全屏程序独占点击：触发键 + 单击原样交给程序，回到桌面后手势恢复正常",
     toggle_shortcut: "开关快捷键",
     toggle_shortcut_desc: "在任何地方都可用，即使信号已关闭",
     start_enabled: "启动时开启",
@@ -862,26 +772,6 @@ static ZH: Strings = Strings {
     toast_room_full_body: "一个房间最多 8 人",
     toast_no_code: "剪贴板中没有房间码",
     toast_no_code_body: "请先复制形如 PING-XXXXX-XXXXX 的房间码",
-    update_now: "更新",
-    whats_new: "更新内容",
-    check_for_updates: "检查更新",
-    checking: "正在检查…",
-    up_to_date: "lolPing 已是最新版本",
-    installing_update: "正在安装更新…",
-    update_toast_title: "有可用更新",
-    update_error_toast_title: "更新出错",
-    restarting_to_update: "正在重启以更新…",
-    update_mac_steps: "lolPing 会下载更新并打开它。请把 lolPing 拖到“应用程序”中，选择“替换”，然后打开它并再次允许辅助功能。",
-    update_mac_dialog: "请把 lolPing 拖到“应用程序”中并选择“替换”，然后打开它并再次允许辅助功能。lolPing 现在将退出。",
-    update_err_download: "下载失败，请重试。",
-    update_err_damaged: "下载的文件已损坏，请重试。",
-    update_err_install: "无法安装更新，请重试。",
-    update_reason_unknown: "没有详细信息",
-    retry: "重试",
-    auto_update_check: "自动检查更新",
-    auto_update_check_desc: "每隔几小时向 GitHub 检查一次新版本。在你点击“更新”之前不会下载任何内容。",
-    tray_check_for_updates: "检查更新",
-    tray_installing: "正在安装更新…",
 };
 
 pub fn strings(lang: Lang) -> &'static Strings {
@@ -898,8 +788,8 @@ mod tests {
 
     #[test]
     fn key_count_matches_reference() {
-        // The reference table has 215 keys and 37 of them are methods here; 11 describe macOS-only behaviour that is gone.
-        assert_eq!(Strings::FIELD_COUNT + 37, 215 - 11);
+        // The reference table has 217 keys: 30 are methods here, and 11 macOS-only plus 27 updater keys are gone.
+        assert_eq!(Strings::FIELD_COUNT + 30, 217 - 11 - 27);
     }
 
     #[test]

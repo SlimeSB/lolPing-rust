@@ -19,8 +19,6 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/SlimeSB/lolPing-rust" alt="MIT license"></a>
 </p>
 
-<p align="center"><img src="docs/media/demo.gif" width="880" alt="An app freezes with a not-responding dialog, and the ping wheel drops three Enemy Missing pings on it"></p>
-
 Pings and emotes show up in whole-screen capture, so friends watching your Discord or OBS stream see them too. lolPing is a desktop toy: it doesn't read, change or hook into League itself.
 
 ## Install
@@ -49,11 +47,12 @@ The wheel, from the top going clockwise: Danger, Push, On My Way, All In, Assist
 
 ## Settings
 
-<img src="docs/media/settings.png" width="760" alt="The lolPing settings window, with sections for trigger, toggle, pings and sound, wheel, emotes, room and app">
+<img src="docs/media/settings.png" width="760" alt="The lolPing settings window, one scrolling page of sections: trigger, toggle, pings and sound, wheel, emotes, room and app">
 
 - **Trigger key:** Alt by default. Also offered: Ctrl, Shift, Win, Caps Lock, Mouse 4, Mouse 5 and any other key. A custom key won't type in other apps while pinging is on.
 - **Drag distance:** how far the mouse must move before the wheel opens (2 to 40 px, 8 by default).
 - **Alt + click places a ping:** off by default, so ordinary Alt + click shortcuts keep working. It places the ping in the centre of the wheel (Generic unless you change it).
+- **Pause in fullscreen apps:** on by default. A fullscreen game keeps every click — trigger + click does nothing there — and gestures resume on the desktop and on other monitors. Windowed games aren't detected, and with an auto-hiding taskbar only borderless fullscreen counts.
 - **Enable / disable shortcut:** Ctrl + Alt + P by default. It must include Ctrl, Alt or Win.
 - **Start enabled:** pinging is on when lolPing launches.
 - **Pings & sound:** ping size (60 to 220 px), how long a ping stays on screen (1 to 8 s), volume, mute and the wheel's tick sound.

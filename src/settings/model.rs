@@ -124,6 +124,7 @@ pub struct Settings {
     pub trigger: TriggerKey,
     pub drag_threshold_px: u32,
     pub click_ping: bool,
+    pub game_check: bool,
     pub click_ping_id: &'static str,
     pub wheel: Vec<&'static str>,
     pub toggle_hotkey: Hotkey,
@@ -149,7 +150,6 @@ pub struct Settings {
     pub emote_size_px: u32,
     pub emote_sound: bool,
     pub custom_emotes: Vec<CustomEmote>,
-    pub auto_update_check: bool,
 }
 
 impl Default for Settings {
@@ -160,6 +160,7 @@ impl Default for Settings {
             trigger: TriggerKey::Named(NamedTrigger::Alt),
             drag_threshold_px: 8,
             click_ping: false,
+            game_check: true,
             click_ping_id: DEFAULT_CLICK_PING,
             wheel: DEFAULT_WHEEL.to_vec(),
             toggle_hotkey: Hotkey { mods: MOD_CTRL | MOD_ALT, vk: 0x50 },
@@ -184,7 +185,6 @@ impl Default for Settings {
             emote_size_px: 150,
             emote_sound: true,
             custom_emotes: Vec::new(),
-            auto_update_check: true,
         }
     }
 }
@@ -401,6 +401,7 @@ pub fn normalize(raw: &Value, identity: &Identity) -> Settings {
         trigger: ping_trigger,
         drag_threshold_px: num(get("dragThresholdPx"), LIMITS.drag_threshold_px, 8.0) as u32,
         click_ping: bool_of(get("clickPing"), false),
+        game_check: bool_of(get("gameCheck"), true),
         click_ping_id: ping_id(get("clickPingId")).unwrap_or(DEFAULT_CLICK_PING),
         wheel: match get("wheel") {
             Some(v) if is_valid_wheel(v) => wheel_ids(v),
@@ -431,7 +432,6 @@ pub fn normalize(raw: &Value, identity: &Identity) -> Settings {
         emote_size_px: num(get("emoteSizePx"), LIMITS.emote_size_px, 150.0) as u32,
         emote_sound: bool_of(get("emoteSound"), true),
         custom_emotes: custom,
-        auto_update_check: bool_of(get("autoUpdateCheck"), true),
     }
 }
 
@@ -537,7 +537,7 @@ mod tests {
         let keys: Vec<&str> = value.as_object().unwrap().keys().map(String::as_str).collect();
         assert!(keys.contains(&"pingDurationS"));
         assert!(keys.contains(&"emoteTrigger"));
-        assert!(keys.contains(&"autoUpdateCheck"));
+        assert!(!keys.contains(&"autoUpdateCheck"));
         assert!(!keys.contains(&"updateNotifiedVersion"));
     }
 
@@ -684,6 +684,7 @@ mod tests {
             trigger: TriggerKey::Named(NamedTrigger::Mouse4),
             drag_threshold_px: 20,
             click_ping: true,
+            game_check: false,
             click_ping_id: "omw",
             wheel: DEFAULT_WHEEL.to_vec(),
             toggle_hotkey: Hotkey { mods: MOD_CTRL | MOD_ALT, vk: 0x50 },
@@ -712,7 +713,6 @@ mod tests {
                 name: "我的表情".to_string(),
                 animated: false,
             }],
-            auto_update_check: false,
         }
     }
 
@@ -722,6 +722,7 @@ mod tests {
   "trigger": "mouse4",
   "dragThresholdPx": 20,
   "clickPing": true,
+  "gameCheck": false,
   "clickPingId": "omw",
   "wheel": ["danger", "push", "omw", "allin", "assist", "needvision", "missing", "enemyvision"],
   "toggleHotkey": { "mods": 3, "vk": 80 },

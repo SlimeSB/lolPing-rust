@@ -753,7 +753,7 @@ impl App {
     fn push_settings(&self) {
         if let Some(window) = &self.window {
             if window.alive() {
-                window.send(WindowMsg::Settings(self.settings.clone()));
+                window.send(WindowMsg::Settings(Box::new(self.settings.clone())));
             }
         }
     }
@@ -865,6 +865,7 @@ fn hook_config(settings: &Settings, enabled: bool) -> Config {
             TriggerKey::Named(_) => 0,
         },
         click_ping: settings.click_ping,
+        game_check: settings.game_check,
         emote_trigger: match settings.emote_trigger {
             EmoteTrigger::Off => Trigger::None,
             EmoteTrigger::Key(key) => trigger_of(key),

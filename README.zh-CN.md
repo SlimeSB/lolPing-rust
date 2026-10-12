@@ -19,8 +19,6 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/SlimeSB/lolPing-rust" alt="MIT 许可证"></a>
 </p>
 
-<p align="center"><img src="docs/media/demo.zh-CN.gif" width="880" alt="一个程序卡死弹出“未响应”对话框，信号轮盘在上面连发三个“敌人消失”信号"></p>
-
 信号和表情会出现在全屏录制/共享画面里，所以在 Discord 或 OBS 上看你直播的朋友也能看到。lolPing 只是一个桌面小玩具：它不会读取、修改或注入英雄联盟本身。
 
 ## 安装
@@ -49,11 +47,12 @@ exe 面向 64 位 Windows 构建。程序已在运行时再次启动，只会打
 
 ## 设置
 
-<img src="docs/media/settings.zh-CN.png" width="760" alt="lolPing 设置窗口，包含触发、开关、信号与声音、轮盘、表情、房间和应用几个部分">
+<img src="docs/media/settings.zh-CN.png" width="760" alt="lolPing 设置窗口，一个可滚动的页面，依次是触发、开关、信号与声音、轮盘、表情、房间和应用等部分">
 
 - **触发键：** 默认 Alt。还可以选 Ctrl、Shift、Win、Caps Lock、鼠标侧键 4、鼠标侧键 5，或任意其他按键。使用自定义按键时，lolPing 开启期间该键不会在其他程序中输入字符。
 - **拖动距离：** 鼠标移动多远后才打开轮盘（2 到 40 像素，默认 8）。
 - **Alt + 单击发送信号：** 默认关闭，这样平时的 Alt + 单击快捷操作不受影响。发送的是轮盘中心的信号（默认是普通信号）。
+- **全屏程序中暂停：** 默认开启。全屏游戏独占所有点击——触发键 + 单击原样交给程序——回到桌面或在其他显示器上手势恢复正常。窗口化游戏检测不到；任务栏自动隐藏时只识别无边框全屏。
 - **开关快捷键：** 默认 Ctrl + Alt + P，必须包含 Ctrl、Alt 或 Win。
 - **启动时开启：** 启动 lolPing 时信号处于开启状态。
 - **信号与声音：** 信号大小（60 到 220 像素）、信号在屏幕上停留多久（1 到 8 秒）、音量、静音，以及轮盘提示音。

@@ -21,6 +21,7 @@ A desktop toy for Windows that recreates League of Legends' ping wheel anywhere 
 | Input | A low-level hook owns the mouse and keyboard on its own thread and swallows the gesture, so the app underneath never sees the press. |
 | Trigger | Hold Alt and drag with the left button for the wheel, Ctrl for the emote wheel. Both are configurable, and the two cannot share a key. |
 | Trigger + click | Off by default, so ordinary Alt + click shortcuts keep working. On, it places the centre ping and swallows the click. |
+| Fullscreen | On by default: a press that would start a gesture passes through when the foreground window covers the clicked monitor, so a game keeps every click. |
 | Toggle | A global hotkey, Ctrl + Alt + P by default, mirrored in the tray. It needs Ctrl, Alt or Win, or it would swallow ordinary typing. |
 | Wheel | 8 slices, top then clockwise, plus one centre slot. Any of the 11 pings fits any slot. |
 | Excluded pings | Defend/Hold, Target and the caution circle: they need a target, so they wait until lolPing can pick one. |
@@ -58,7 +59,7 @@ A room holds 8 members. A peer id is made fresh on every join, so a peer that sa
 ## 4. Invariants
 
 - For every swallowed press the paired release is swallowed too, or both are replayed: an app never sees an unmatched press.
-- A press is claimed only when exactly one wheel's trigger claims it. With both triggers held, the press passes through rather than the code guessing.
+- A press is claimed only when exactly one wheel's trigger claims it, no other program's chord is holding a trigger, and no fullscreen app owns that screen; otherwise it passes through rather than the code guessing.
 - Only the main loop mutates shared state. The hook thread, the overlay thread, the transports, the settings writer and the window talk to it over channels.
 - The overlay never reads a settings file and never decides anything about rooms.
 - Every number, enum and string that comes from disk or from a peer passes one normalising path and cannot fail: a broken value becomes the default, never an error.

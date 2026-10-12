@@ -139,8 +139,10 @@ fn general(app: &mut App, ui: &mut egui::Ui, t: &'static Strings) {
     let click_title = t.click_ping(&trigger_label);
     let click_desc = t.click_ping_desc(&trigger_label);
     let click_ping = app.settings.click_ping;
+    let game_check = app.settings.game_check;
     ui.add_enabled_ui(!off, |ui| {
         switch_row(app, ui, t, &click_title, Some(click_desc.as_str()), "clickPing", click_ping);
+        switch_row(app, ui, t, t.game_check, Some(t.game_check_desc), "gameCheck", game_check);
     });
 
     section(ui, t.nav_toggle);

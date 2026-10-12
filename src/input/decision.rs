@@ -84,6 +84,7 @@ pub struct Config {
     pub trigger: Trigger,
     pub trigger_vk: u32,
     pub click_ping: bool,
+    pub game_check: bool,
     pub emote_trigger: Trigger,
     pub emote_trigger_vk: u32,
     pub emote_click: bool,
@@ -99,6 +100,7 @@ impl Default for Config {
             trigger: Trigger::Alt,
             trigger_vk: 0,
             click_ping: false,
+            game_check: false,
             emote_trigger: Trigger::None,
             emote_trigger_vk: 0,
             emote_click: false,
@@ -205,11 +207,13 @@ pub struct Decision {
     cfg: Config,
     enabled: bool,
     suspended: bool,
+    fullscreen_probe: Option<fn(i32, i32) -> bool>,
     state: State,
     key_down: [bool; 256],
     swallow_key_ups: BTreeSet<u32>,
     swallow_right_up: bool,
     need_mask: bool,
+    foreign_key: bool,
     mask_menu_keys: bool,
     owner: WheelKind,
     drag_btn: Btn,
@@ -224,11 +228,13 @@ impl Default for Decision {
             cfg: Config::default(),
             enabled: true,
             suspended: false,
+            fullscreen_probe: None,
             state: State::Idle,
             key_down: [false; 256],
             swallow_key_ups: BTreeSet::new(),
             swallow_right_up: false,
             need_mask: false,
+            foreign_key: false,
             mask_menu_keys: true,
             owner: WheelKind::Ping,
             drag_btn: Btn::None,
@@ -247,6 +253,10 @@ impl Decision {
     /// macOS has no Alt/Win menu activation, so its hook layer turns this off.
     pub fn set_mask_menu_keys(&mut self, on: bool) {
         self.mask_menu_keys = on;
+    }
+
+    pub fn set_fullscreen_probe(&mut self, probe: fn(i32, i32) -> bool) {
+        self.fullscreen_probe = Some(probe);
     }
 
     pub fn state(&self) -> State {
@@ -305,6 +315,9 @@ impl Decision {
             if self.key_down[vk as usize] && !swallowed && !is_down(vk) {
                 self.key_down[vk as usize] = false;
             }
+        }
+        if !self.held(WheelKind::Ping) && !self.held(WheelKind::Emote) {
+            self.foreign_key = false;
         }
     }
 
@@ -429,6 +442,16 @@ impl Decision {
         let repeat = self.key_down[vk as usize];
         self.key_down[vk as usize] = true;
 
+        // Another program's chord (Alt+Tab, Alt+F4…): until every trigger is released, clicks are its own.
+        if self.state == State::Idle
+            && mod_bit(vk) == 0
+            && !self.is_trigger_vk(WheelKind::Ping, vk)
+            && !self.is_trigger_vk(WheelKind::Emote, vk)
+            && (self.held(WheelKind::Ping) || self.held(WheelKind::Emote))
+        {
+            self.foreign_key = true;
+        }
+
         if !self.suspended && vk == self.cfg.toggle_vk && self.mods() == self.cfg.toggle_mods {
             r.swallow = true;
             self.swallow_key_ups.insert(vk);
@@ -468,6 +491,9 @@ impl Decision {
         // Only the gesture's own trigger ends it: the other wheel's key comes and goes freely.
         let held_before = self.held(self.owner);
         self.key_down[vk as usize] = false;
+        if !self.held(WheelKind::Ping) && !self.held(WheelKind::Emote) {
+            self.foreign_key = false;
+        }
         let trigger_released = held_before && !self.held(self.owner) && self.is_trigger_vk(self.owner, vk);
 
         if self.swallow_key_ups.remove(&vk) {
@@ -525,10 +551,18 @@ impl Decision {
         if self.state != State::Idle {
             return;
         }
+        if self.foreign_key {
+            return;
+        }
         // Exactly one wheel's trigger must claim the press: when both do, pass it through rather than guess.
         let ping = self.starts_gesture(WheelKind::Ping, e.btn);
         let emote = self.starts_gesture(WheelKind::Emote, e.btn);
         if ping != emote {
+            // Only a press that would start a gesture pays for the probe.
+            let probe = self.fullscreen_probe;
+            if self.cfg.game_check && probe.is_some_and(|p| p(e.x, e.y)) {
+                return;
+            }
             r.swallow = true;
             self.mark_swallow();
             self.state = State::Pending;
@@ -595,6 +629,7 @@ mod tests {
     const KEY_V: u32 = 0x56;
     const ESC: u32 = 0x1B;
     const CAPS: u32 = 0x14;
+    const TAB: u32 = 0x09;
 
     fn kd(vk: u32) -> InputEvent {
         InputEvent { kind: EvKind::KeyDown, vk, ..Default::default() }
@@ -901,5 +936,52 @@ mod tests {
         d.on_event(&md(Btn::Right, 200, 200));
         d.on_event(&md(Btn::Right, 201, 201));
         assert!(!d.on_event(&mu(Btn::Right, 201, 201)).swallow);
+    }
+
+    fn always_fullscreen(_: i32, _: i32) -> bool {
+        true
+    }
+
+    fn never_fullscreen(_: i32, _: i32) -> bool {
+        false
+    }
+
+    #[test]
+    fn another_programs_chord_lets_clicks_through_until_the_trigger_is_released() {
+        let mut d = Decision::new();
+        d.on_event(&kd(ALT));
+        d.on_event(&kd(TAB));
+        assert!(!d.on_event(&md(Btn::Left, 100, 100)).swallow);
+        assert_eq!(d.state(), State::Idle);
+        d.on_event(&ku(TAB));
+        assert!(!d.on_event(&md(Btn::Left, 100, 100)).swallow);
+        d.on_event(&ku(ALT));
+        d.on_event(&kd(ALT));
+        assert!(d.on_event(&md(Btn::Left, 100, 100)).swallow);
+    }
+
+    #[test]
+    fn fullscreen_app_keeps_the_click() {
+        let mut d = Decision::new();
+        d.set_config(Config { game_check: true, ..Config::default() });
+        d.set_fullscreen_probe(always_fullscreen);
+        d.on_event(&kd(ALT));
+        assert!(!d.on_event(&md(Btn::Left, 100, 100)).swallow);
+        assert_eq!(d.state(), State::Idle);
+
+        let mut d = Decision::new();
+        d.set_config(Config { game_check: true, ..Config::default() });
+        d.set_fullscreen_probe(never_fullscreen);
+        d.on_event(&kd(ALT));
+        assert!(d.on_event(&md(Btn::Left, 100, 100)).swallow);
+    }
+
+    #[test]
+    fn fullscreen_check_off_ignores_the_probe() {
+        let mut d = Decision::new();
+        d.set_config(Config { game_check: false, ..Config::default() });
+        d.set_fullscreen_probe(always_fullscreen);
+        d.on_event(&kd(ALT));
+        assert!(d.on_event(&md(Btn::Left, 100, 100)).swallow);
     }
 }

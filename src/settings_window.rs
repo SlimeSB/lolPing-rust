@@ -67,7 +67,7 @@ pub enum UiEvent {
 
 pub enum WindowMsg {
     Status(Status),
-    Settings(Settings),
+    Settings(Box<Settings>),
     Focus,
     Close,
     Import(Result<String, String>),
@@ -279,7 +279,7 @@ impl App {
                     if !self.name_editing {
                         self.name_draft = settings.display_name.clone();
                     }
-                    self.settings = settings;
+                    self.settings = *settings;
                     self.note = None;
                 }
                 WindowMsg::Focus => self.focus = true,

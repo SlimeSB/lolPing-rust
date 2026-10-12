@@ -1,22 +1,27 @@
 use std::cell::RefCell;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::LazyLock;
 use std::time::Instant;
 
-use windows::Win32::Foundation::{HINSTANCE, LPARAM, LRESULT, WPARAM};
+use windows::Win32::Foundation::{HINSTANCE, LPARAM, LRESULT, POINT, RECT, WPARAM};
+use windows::Win32::Graphics::Gdi::{
+    EqualRect, GetMonitorInfoW, MonitorFromPoint, MonitorFromWindow, MONITOR_DEFAULTTONEAREST, MONITORINFO,
+};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::System::Threading::GetCurrentThreadId;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    GetAsyncKeyState, INPUT, INPUT_KEYBOARD, INPUT_MOUSE, KEYBDINPUT, KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP,
-    MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, MOUSEEVENTF_RIGHTDOWN,
-    MOUSEEVENTF_RIGHTUP, MOUSEEVENTF_XDOWN, MOUSEEVENTF_XUP, MOUSEINPUT, SendInput, VIRTUAL_KEY,
+    GetAsyncKeyState, MapVirtualKeyW, INPUT, INPUT_KEYBOARD, INPUT_MOUSE, KEYBDINPUT, KEYEVENTF_EXTENDEDKEY,
+    KEYEVENTF_KEYUP, MAPVK_VK_TO_VSC, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MIDDLEDOWN,
+    MOUSEEVENTF_MIDDLEUP, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, MOUSEEVENTF_XDOWN, MOUSEEVENTF_XUP, MOUSEINPUT,
+    SendInput, VIRTUAL_KEY,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    CallNextHookEx, GetMessageW, HC_ACTION, KBDLLHOOKSTRUCT, LLKHF_INJECTED, LLMHF_INJECTED, MSG, MSLLHOOKSTRUCT,
-    PM_NOREMOVE, PeekMessageW, PostThreadMessageW, SetTimer, SetWindowsHookExW, UnhookWindowsHookEx, WH_KEYBOARD_LL,
-    WH_MOUSE_LL, WM_APP, WM_KEYDOWN, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEMOVE,
-    WM_RBUTTONDOWN, WM_RBUTTONUP, WM_SYSKEYDOWN, WM_TIMER, WM_USER, WM_XBUTTONDOWN, WM_XBUTTONUP, XBUTTON1, XBUTTON2,
+    CallNextHookEx, GetClassNameW, GetForegroundWindow, GetMessageW, GetWindowLongPtrW, GetWindowRect, GWL_STYLE,
+    HC_ACTION, KBDLLHOOKSTRUCT, LLKHF_INJECTED, LLMHF_INJECTED, MSG, MSLLHOOKSTRUCT, PM_NOREMOVE, PeekMessageW,
+    PostThreadMessageW, SetTimer, SetWindowsHookExW, UnhookWindowsHookEx, WH_KEYBOARD_LL, WH_MOUSE_LL, WM_APP,
+    WM_KEYDOWN, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEMOVE, WM_RBUTTONDOWN,
+    WM_RBUTTONUP, WM_SYSKEYDOWN, WM_TIMER, WM_USER, WM_XBUTTONDOWN, WM_XBUTTONUP, WS_CAPTION, XBUTTON1, XBUTTON2,
 };
 
 use crate::input::decision::{Btn, Config, Decision, Emit, EvKind, Inject, InjectKind, InputEvent, Outcome};
@@ -29,6 +34,7 @@ const WM_INJECTS: u32 = WM_APP + 2;
 const WATCHDOG_INTERVAL_MS: u32 = 1000;
 
 static HOOK_THREAD: AtomicU32 = AtomicU32::new(0);
+static PENDING_INJECTS: AtomicBool = AtomicBool::new(false);
 
 pub enum HookCommand {
     Config(Config),
@@ -94,6 +100,45 @@ fn is_extended_vk(vk: u32) -> bool {
     matches!(vk, 0xA5 | 0xA3 | 0x5B | 0x5C | 0x2D | 0x2E | 0x24 | 0x23 | 0x21 | 0x22 | 0x25 | 0x26 | 0x27 | 0x28)
 }
 
+fn is_shell_class(name: &[u16]) -> bool {
+    let len = name.iter().position(|&c| c == 0).unwrap_or(name.len());
+    ["Progman", "WorkerW", "Shell_TrayWnd"].iter().any(|want| {
+        len == want.len() && name[..len].iter().zip(want.bytes()).all(|(&c, b)| c < 0x80 && (c as u8).eq_ignore_ascii_case(&b))
+    })
+}
+
+/// True when the foreground window covers the whole monitor under (x, y), so that screen belongs to it.
+fn click_is_on_fullscreen_app(x: i32, y: i32) -> bool {
+    unsafe {
+        let fg = GetForegroundWindow();
+        if fg.is_invalid() {
+            return false;
+        }
+        let mut class = [0u16; 64];
+        if GetClassNameW(fg, &mut class) != 0 && is_shell_class(&class) {
+            return false;
+        }
+        let monitor = MonitorFromWindow(fg, MONITOR_DEFAULTTONEAREST);
+        if monitor.is_invalid() || monitor != MonitorFromPoint(POINT { x, y }, MONITOR_DEFAULTTONEAREST) {
+            return false;
+        }
+        let mut window = RECT::default();
+        let mut info = MONITORINFO { cbSize: std::mem::size_of::<MONITORINFO>() as u32, ..Default::default() };
+        if GetWindowRect(fg, &mut window).is_err() || !GetMonitorInfoW(monitor, &mut info).as_bool() {
+            return false;
+        }
+        let screen = info.rcMonitor;
+        if window.left > screen.left || window.top > screen.top || window.right < screen.right || window.bottom < screen.bottom {
+            return false;
+        }
+        if EqualRect(&info.rcWork, &screen).as_bool() {
+            // Nothing reserved the work area, so only a caption-less window covers the screen: CS2's keeps it.
+            return GetWindowLongPtrW(fg, GWL_STYLE) & (WS_CAPTION.0 as isize) != WS_CAPTION.0 as isize;
+        }
+        true
+    }
+}
+
 fn send_injects(injects: &[Inject]) {
     if injects.is_empty() {
         return;
@@ -126,10 +171,12 @@ fn send_injects(injects: &[Inject]) {
                 if is_extended_vk(i.vk) {
                     flags |= KEYEVENTF_EXTENDEDKEY;
                 }
+                // SAFETY: MapVirtualKeyW reads a table and writes nothing.
+                let scan = unsafe { MapVirtualKeyW(i.vk, MAPVK_VK_TO_VSC) } as u16;
                 input.r#type = INPUT_KEYBOARD;
                 input.Anonymous.ki = KEYBDINPUT {
                     wVk: VIRTUAL_KEY(i.vk as u16),
-                    wScan: 0,
+                    wScan: scan,
                     dwFlags: flags,
                     time: 0,
                     dwExtraInfo: SELF_MARKER,
@@ -156,7 +203,9 @@ fn post_injects(injects: Vec<Inject>) {
     if !posted {
         // SAFETY: the message was never posted, so nobody else owns the box.
         drop(unsafe { Box::from_raw(raw) });
+        return;
     }
+    PENDING_INJECTS.store(true, Ordering::Relaxed);
 }
 
 fn apply(outcome: Outcome, sink: Option<&Sender<Emit>>) -> bool {
@@ -183,6 +232,22 @@ fn on_event(event: InputEvent) -> bool {
         return false;
     };
     apply(outcome, Some(&sink))
+}
+
+/// A real event that would overtake injects still queued is swallowed and replayed behind them.
+fn on_event_in_order(event: InputEvent, replay: Inject) -> bool {
+    let behind = !event.self_injected && PENDING_INJECTS.load(Ordering::Relaxed);
+    let Some((outcome, sink)) = with_state(|st| st.decision.on_event(&event)) else {
+        return false;
+    };
+    if apply(outcome, Some(&sink)) {
+        return true;
+    }
+    if !behind {
+        return false;
+    }
+    post_injects(vec![replay]);
+    true
 }
 
 fn on_command(cmd: HookCommand) {
@@ -244,8 +309,16 @@ unsafe extern "system" fn mouse_proc(code: i32, wparam: WPARAM, lparam: LPARAM) 
         if known && e.kind == EvKind::MouseDown {
             with_state(|st| st.decision.sync_key_states(is_key_down));
         }
-        if known && on_event(e) {
-            return LRESULT(1);
+        if known {
+            let swallow = if e.kind == EvKind::MouseMove {
+                on_event(e)
+            } else {
+                let kind = if e.kind == EvKind::MouseDown { InjectKind::ButtonDown } else { InjectKind::ButtonUp };
+                on_event_in_order(e, Inject { kind, btn: e.btn, vk: 0 })
+            };
+            if swallow {
+                return LRESULT(1);
+            }
         }
     }
     unsafe { CallNextHookEx(None, code, wparam, lparam) }
@@ -263,7 +336,8 @@ unsafe extern "system" fn key_proc(code: i32, wparam: WPARAM, lparam: LPARAM) ->
             ..Default::default()
         };
         e.self_injected = k.flags.contains(LLKHF_INJECTED) && k.dwExtraInfo == SELF_MARKER;
-        if on_event(e) {
+        let kind = if down { InjectKind::KeyDown } else { InjectKind::KeyUp };
+        if on_event_in_order(e, Inject { kind, btn: Btn::None, vk: e.vk }) {
             return LRESULT(1);
         }
     }
@@ -271,8 +345,10 @@ unsafe extern "system" fn key_proc(code: i32, wparam: WPARAM, lparam: LPARAM) ->
 }
 
 fn run(sink: Sender<Emit>, ready: Sender<Result<u32, String>>, id_tx: Sender<u32>) {
+    let mut state = HookState { decision: Decision::new(), sink };
+    state.decision.set_fullscreen_probe(click_is_on_fullscreen_app);
     STATE.with(|cell| {
-        *cell.borrow_mut() = Some(HookState { decision: Decision::new(), sink });
+        *cell.borrow_mut() = Some(state);
     });
 
     let mut msg = MSG::default();
@@ -318,6 +394,7 @@ fn run(sink: Sender<Emit>, ready: Sender<Result<u32, String>>, id_tx: Sender<u32
                 // SAFETY: only `post_injects` posts this message, and it hands the box over.
                 let injects = unsafe { *Box::from_raw(msg.lParam.0 as *mut Vec<Inject>) };
                 send_injects(&injects);
+                PENDING_INJECTS.store(false, Ordering::Relaxed);
             }
             WM_COMMAND => {
                 // SAFETY: only `HookHandle::send` posts this message, and it hands the box over.
