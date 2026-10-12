@@ -130,6 +130,10 @@ impl App {
         app
     }
 
+    pub fn ui_sender(&self) -> Sender<UiEvent> {
+        self.ui_tx.clone()
+    }
+
     pub fn open_settings(&mut self) {
         match &self.window {
             Some(window) if window.alive() => window.send(WindowMsg::Focus),
@@ -954,4 +958,9 @@ pub(crate) fn system_locale() -> String {
         .or_else(|_| std::env::var("LANG"))
         .unwrap_or_default();
     raw.split(['.', '@']).next().unwrap_or_default().replace('_', "-")
+}
+
+#[cfg(target_os = "macos")]
+pub(crate) fn system_locale() -> String {
+    objc2_foundation::NSLocale::currentLocale().localeIdentifier().to_string().replace('_', "-")
 }

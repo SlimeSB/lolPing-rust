@@ -236,7 +236,7 @@ fn wide(s: &str) -> Vec<u16> {
     s.encode_utf16().chain(std::iter::once(0)).collect()
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(unix)]
 fn interface_addresses() -> Vec<(Ipv4Addr, Ipv4Addr)> {
     let mut out = Vec::new();
     let mut head: *mut libc::ifaddrs = std::ptr::null_mut();
@@ -259,7 +259,7 @@ fn interface_addresses() -> Vec<(Ipv4Addr, Ipv4Addr)> {
     out
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(unix)]
 fn sockaddr_v4(address: *const libc::sockaddr) -> Option<Ipv4Addr> {
     if address.is_null() {
         return None;

@@ -53,6 +53,13 @@ fn data_root() -> PathBuf {
         .unwrap_or_else(std::env::temp_dir)
 }
 
+#[cfg(target_os = "macos")]
+fn data_root() -> PathBuf {
+    std::env::var_os("HOME")
+        .map(|home| PathBuf::from(home).join("Library/Application Support"))
+        .unwrap_or_else(std::env::temp_dir)
+}
+
 /// The faces with Chinese, in the order the overlay and the settings window both prefer.
 #[cfg(windows)]
 pub const CJK_FACES: [(&[&str], u32); 4] = [
@@ -68,6 +75,14 @@ pub const CJK_FACES: [(&[&str], u32); 4] = [
     (&["NotoSansSC-Regular.otf", "NotoSansSC-Regular.ttf"], 0),
     (&["wqy-zenhei.ttc"], 0),
     (&["wqy-microhei.ttc", "DroidSansFallbackFull.ttf"], 0),
+];
+
+#[cfg(target_os = "macos")]
+pub const CJK_FACES: [(&[&str], u32); 4] = [
+    (&["PingFang.ttc"], 0),
+    (&["Hiragino Sans GB.ttc"], 0),
+    (&["STHeiti Light.ttc"], 0),
+    (&["Songti.ttc"], 0),
 ];
 
 /// The first of these faces the system has, wherever its font tree keeps them.
@@ -117,6 +132,15 @@ fn font_roots() -> Vec<PathBuf> {
         let home = PathBuf::from(home);
         roots.push(home.join(".local/share/fonts"));
         roots.push(home.join(".fonts"));
+    }
+    roots
+}
+
+#[cfg(target_os = "macos")]
+fn font_roots() -> Vec<PathBuf> {
+    let mut roots = vec![PathBuf::from("/System/Library/Fonts"), PathBuf::from("/Library/Fonts")];
+    if let Some(home) = std::env::var_os("HOME") {
+        roots.push(PathBuf::from(home).join("Library/Fonts"));
     }
     roots
 }

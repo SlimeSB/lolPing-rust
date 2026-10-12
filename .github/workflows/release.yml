@@ -19,6 +19,8 @@ jobs:
             suffix: linux-x86_64.tar.gz
           - runner: windows-latest
             suffix: win64.zip
+          - runner: macos-14
+            suffix: arm64.tar.gz
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v7
@@ -50,6 +52,12 @@ jobs:
       - name: Package the binary with its assets
         if: runner.os == 'Linux'
         run: tar -czf "lolPing-$VERSION-${{ matrix.suffix }}" -C target/release lolPing -C "$GITHUB_WORKSPACE" assets
+      - name: Package the app with its assets
+        if: runner.os == 'macOS'
+        run: |
+          VERSION="$VERSION" sh packaging/mac/bundle.sh
+          codesign --verify --strict target/release/lolPing.app
+          tar -czf "lolPing-$VERSION-${{ matrix.suffix }}" -C target/release lolPing.app
       - uses: actions/upload-artifact@v4
         with:
           name: lolPing-${{ matrix.suffix }}

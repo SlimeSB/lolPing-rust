@@ -36,12 +36,21 @@ pub const NAMED_TRIGGERS: [NamedTrigger; 7] = [
 ];
 
 /// The keyboard triggers offered on Windows: macOS can't stop Caps Lock toggling, so it isn't in the mac list.
+#[cfg(not(target_os = "macos"))]
 pub const KEYBOARD_TRIGGERS: [NamedTrigger; 5] = [
     NamedTrigger::Alt,
     NamedTrigger::Ctrl,
     NamedTrigger::Shift,
     NamedTrigger::Win,
     NamedTrigger::Capslock,
+];
+
+#[cfg(target_os = "macos")]
+pub const KEYBOARD_TRIGGERS: [NamedTrigger; 4] = [
+    NamedTrigger::Alt,
+    NamedTrigger::Ctrl,
+    NamedTrigger::Shift,
+    NamedTrigger::Win,
 ];
 
 impl NamedTrigger {

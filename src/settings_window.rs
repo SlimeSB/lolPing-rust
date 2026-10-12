@@ -4,6 +4,8 @@ mod ui;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, LazyLock};
+#[cfg(target_os = "macos")]
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use eframe::egui;
@@ -81,6 +83,7 @@ pub struct SettingsWindow {
     alive: Arc<AtomicBool>,
 }
 
+#[cfg(not(target_os = "macos"))]
 struct Request {
     settings: Settings,
     status: Status,
@@ -90,6 +93,19 @@ struct Request {
 }
 
 impl SettingsWindow {
+    #[cfg(target_os = "macos")]
+    pub fn open(_events: Sender<UiEvent>, initial: Settings, status: Status) -> Self {
+        let sender = MAC_WINDOW.lock().ok().and_then(|slot| slot.clone());
+        if let Some(sender) = &sender {
+            let _ = sender.send(WindowMsg::Settings(Box::new(initial)));
+            let _ = sender.send(WindowMsg::Status(status));
+            let _ = sender.send(WindowMsg::Focus);
+        }
+        show_window();
+        Self { tx: sender.unwrap_or_else(|| mpsc::channel().0), alive: Arc::new(AtomicBool::new(true)) }
+    }
+
+    #[cfg(not(target_os = "macos"))]
     pub fn open(events: Sender<UiEvent>, initial: Settings, status: Status) -> Self {
         let (tx, rx) = mpsc::channel();
         let alive = Arc::new(AtomicBool::new(true));
@@ -110,6 +126,7 @@ impl SettingsWindow {
 }
 
 // winit allows one event loop per process and eframe caches it per thread, so every window runs on this one thread.
+#[cfg(not(target_os = "macos"))]
 static HOST: LazyLock<Sender<Request>> = LazyLock::new(|| {
     let (tx, rx) = mpsc::channel();
     std::thread::Builder::new()
@@ -119,6 +136,7 @@ static HOST: LazyLock<Sender<Request>> = LazyLock::new(|| {
     tx
 });
 
+#[cfg(not(target_os = "macos"))]
 fn host_loop(requests: Receiver<Request>) {
     while let Ok(request) = requests.recv() {
         let app = App::new(request.events.clone(), request.messages, request.settings, request.status);
@@ -149,6 +167,64 @@ fn host_loop(requests: Receiver<Request>) {
         request.alive.store(false, Ordering::SeqCst);
         let _ = request.events.send(UiEvent::Closed);
     }
+}
+
+#[cfg(target_os = "macos")]
+static MAC_WINDOW: LazyLock<Mutex<Option<Sender<WindowMsg>>>> = LazyLock::new(|| Mutex::new(None));
+
+/// Runs the settings window on the main thread, the only one winit and AppKit allow an event loop on.
+#[cfg(target_os = "macos")]
+pub fn mac_run(events: Sender<UiEvent>) -> ! {
+    let (tx, rx) = mpsc::channel();
+    if let Ok(mut slot) = MAC_WINDOW.lock() {
+        *slot = Some(tx);
+    }
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_title("lolPing")
+            .with_inner_size([880.0, 720.0])
+            .with_min_inner_size([560.0, 420.0])
+            .with_visible(false),
+        event_loop_builder: Some(Box::new(|builder| {
+            winit::platform::macos::EventLoopBuilderExtMacOS::with_activation_policy(
+                builder,
+                winit::platform::macos::ActivationPolicy::Accessory,
+            );
+        })),
+        ..Default::default()
+    };
+    let status = Status { enabled: true, helper: HelperState::Running, first_run: false, problems: Vec::new() };
+    let creator: eframe::AppCreator<'_> = Box::new(move |cc| {
+        install_fonts(&cc.egui_ctx);
+        Ok(Box::new(App::new(events, rx, Settings::default(), status)) as Box<dyn eframe::App>)
+    });
+    if let Err(error) = eframe::run_native("lolPing", options, creator) {
+        eprintln!("settings window: {error:?}");
+    }
+    std::process::exit(0)
+}
+
+#[cfg(target_os = "macos")]
+fn show_window() {
+    let Some(mtm) = objc2::MainThreadMarker::new() else {
+        return;
+    };
+    let app = objc2_app_kit::NSApplication::sharedApplication(mtm);
+    app.setActivationPolicy(objc2_app_kit::NSApplicationActivationPolicy::Regular);
+    app.activate();
+    if let Some(window) = app.windows().iter().next() {
+        window.makeKeyAndOrderFront(None);
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn hide_window(ctx: &egui::Context) {
+    ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
+    let Some(mtm) = objc2::MainThreadMarker::new() else {
+        return;
+    };
+    objc2_app_kit::NSApplication::sharedApplication(mtm)
+        .setActivationPolicy(objc2_app_kit::NSApplicationActivationPolicy::Accessory);
 }
 
 const POLL: Duration = Duration::from_millis(100);
@@ -396,6 +472,18 @@ impl eframe::App for App {
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.poll();
         self.read_input(ctx);
+        #[cfg(target_os = "macos")]
+        if ctx.input(|i| i.viewport().close_requested()) {
+            ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+            self.closing = true;
+        }
+        #[cfg(target_os = "macos")]
+        if self.closing {
+            self.closing = false;
+            hide_window(ctx);
+            let _ = self.events.send(UiEvent::Closed);
+        }
+        #[cfg(not(target_os = "macos"))]
         if self.closing {
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
         }

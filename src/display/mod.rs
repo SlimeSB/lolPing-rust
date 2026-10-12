@@ -8,6 +8,11 @@ mod linux;
 #[cfg(target_os = "linux")]
 pub use linux::*;
 
+#[cfg(target_os = "macos")]
+mod mac;
+#[cfg(target_os = "macos")]
+pub use mac::*;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Rect {
     pub x: i32,
@@ -66,6 +71,15 @@ pub fn display_at_physical(x: i32, y: i32, maps: &[DisplayMap]) -> Option<&Displ
 pub fn physical_to_dip(x: i32, y: i32, maps: &[DisplayMap]) -> Option<(DisplayMap, f64, f64)> {
     let d = display_at_physical(x, y, maps)?;
     Some((*d, f64::from(d.dip.x) + f64::from(x - d.phys.x) / d.scale, f64::from(d.dip.y) + f64::from(y - d.phys.y) / d.scale))
+}
+
+/// Global DIP coordinates back to physical screen pixels: macOS input arrives in points.
+pub fn dip_to_physical(x: f64, y: f64, maps: &[DisplayMap]) -> Option<(i32, i32)> {
+    let d = maps.iter().find(|m| m.dip.contains(x.floor() as i32, y.floor() as i32))?;
+    Some((
+        d.phys.x + ((x - f64::from(d.dip.x)) * d.scale).round() as i32,
+        d.phys.y + ((y - f64::from(d.dip.y)) * d.scale).round() as i32,
+    ))
 }
 
 /// Physical point to pixels inside one overlay, defaulting to the display under the point.
@@ -176,6 +190,14 @@ mod tests {
         assert!((local.x - 100.0).abs() < 0.001);
         assert!((local.y - 200.0).abs() < 0.001);
         assert_eq!(local_to_physical(&maps, 2, local.x, local.y), Some((1536 + 125, 250)));
+    }
+
+    #[test]
+    fn a_dip_point_maps_back_to_its_pixels() {
+        let maps = [map(1, 0, 0, 1536, 864, 1.25), map(2, 1536, 0, 1536, 864, 1.25)];
+        assert_eq!(dip_to_physical(1000.0, 100.0, &maps), Some((1250, 125)));
+        assert_eq!(dip_to_physical(1329.0, 50.0, &maps), Some((1661, 63)));
+        assert_eq!(dip_to_physical(-10.0, 0.0, &maps), None);
     }
 
     #[test]

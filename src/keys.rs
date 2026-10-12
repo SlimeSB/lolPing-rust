@@ -100,19 +100,25 @@ pub fn vk_label(vk: u32) -> String {
     }
 }
 
+#[cfg(target_os = "macos")]
+const MOD_LABELS: [&str; 4] = ["Control", "Option", "Shift", "Command"];
+
+#[cfg(not(target_os = "macos"))]
+const MOD_LABELS: [&str; 4] = ["Ctrl", "Alt", "Shift", "Win"];
+
 pub fn mod_labels(mods: u32) -> Vec<&'static str> {
     let mut out = Vec::new();
     if mods & MOD_CTRL != 0 {
-        out.push("Ctrl");
+        out.push(MOD_LABELS[0]);
     }
     if mods & MOD_ALT != 0 {
-        out.push("Alt");
+        out.push(MOD_LABELS[1]);
     }
     if mods & MOD_SHIFT != 0 {
-        out.push("Shift");
+        out.push(MOD_LABELS[2]);
     }
     if mods & MOD_WIN != 0 {
-        out.push("Win");
+        out.push(MOD_LABELS[3]);
     }
     out
 }
@@ -156,7 +162,7 @@ mod tests {
         assert_eq!(vk_label(0x8a), "Key 8A");
 
         let h = Hotkey { mods: MOD_CTRL | MOD_ALT, vk: 0x50 };
-        assert_eq!(hotkey_label(h), "Ctrl + Alt + P");
+        assert_eq!(hotkey_label(h), format!("{} + {} + P", MOD_LABELS[0], MOD_LABELS[1]));
         assert_eq!(event_mods(true, false, true, false), MOD_CTRL | MOD_SHIFT);
     }
 }

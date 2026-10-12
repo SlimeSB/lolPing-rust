@@ -45,6 +45,13 @@ const MAIN_FACES: [[&str; 3]; 3] = [
     ["DejaVuSans-Bold.ttf", "LiberationSans-Bold.ttf", "NotoSans-Bold.ttf"],
 ];
 
+#[cfg(target_os = "macos")]
+const MAIN_FACES: [[&str; 3]; 3] = [
+    ["Helvetica.ttc", "Arial.ttf", "HelveticaNeue.ttc"],
+    ["Helvetica.ttc", "Arial.ttf", "HelveticaNeue.ttc"],
+    ["Arial Bold.ttf", "Helvetica.ttc", "HelveticaNeue.ttc"],
+];
+
 fn load(candidates: &[&str]) -> FontArc {
     let bytes = crate::paths::font_path(candidates)
         .and_then(|path| std::fs::read(path).ok())
