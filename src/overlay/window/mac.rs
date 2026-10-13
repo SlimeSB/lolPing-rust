@@ -33,7 +33,10 @@ struct Layer {
     id: usize,
     window: Retained<NSWindow>,
     view: Retained<NSImageView>,
-    image: Retained<NSImage>,
+    rep: Retained<NSBitmapImageRep>,
+    size: NSSize,
+    width: i32,
+    height: i32,
     dirty: Arc<AtomicBool>,
 }
 
@@ -53,8 +56,13 @@ pub fn pump() {
     LAYERS.with(|layers| {
         for layer in layers.borrow().iter() {
             if layer.dirty.swap(false, Ordering::Relaxed) {
-                // The pixels go straight into the rep, so the image must be told to drop its cached copy of them.
-                layer.image.recache();
+                // A fresh image over the live bytes, because AppKit keeps the copy it drew and only ever draws that one again.
+                let mut plane = layer.rep.bitmapData();
+                if let Some(rep) = bitmap(&mut plane, layer.width, layer.height, layer.rep.bytesPerRow()) {
+                    let image = NSImage::initWithSize(NSImage::alloc(), layer.size);
+                    image.addRepresentation(&rep);
+                    layer.view.setImage(Some(&image));
+                }
                 let view: &NSView = &layer.view;
                 view.setNeedsDisplay(true);
                 report_due("frame", &layer.window, view);
@@ -179,27 +187,9 @@ fn create(x: i32, y: i32, width: i32, height: i32) -> Result<LayeredWindow, Stri
         .find(|m| m.phys.x == x && m.phys.y == y && m.phys.width == width && m.phys.height == height)
         .ok_or_else(|| format!("no display at {x},{y} of {width}x{height}"))?;
     let size = NSSize { width: f64::from(map.dip.width), height: f64::from(map.dip.height) };
-    let rep = unsafe {
-        NSBitmapImageRep::initWithBitmapDataPlanes_pixelsWide_pixelsHigh_bitsPerSample_samplesPerPixel_hasAlpha_isPlanar_colorSpaceName_bytesPerRow_bitsPerPixel(
-            NSBitmapImageRep::alloc(),
-            std::ptr::null_mut(),
-            width as isize,
-            height as isize,
-            8,
-            4,
-            true,
-            false,
-            objc2_app_kit::NSDeviceRGBColorSpace,
-            (width * 4) as isize,
-            32,
-        )
-    }
-    .ok_or("no bitmap image rep")?;
+    let rep = bitmap(std::ptr::null_mut(), width, height, (width * 4) as isize).ok_or("no bitmap image rep")?;
     rep.setSize(size);
-    let image = NSImage::initWithSize(NSImage::alloc(), size);
-    image.addRepresentation(&rep);
     let view = NSImageView::initWithFrame(NSImageView::alloc(mtm), NSRect { origin: CGPoint { x: 0.0, y: 0.0 }, size });
-    view.setImage(Some(&image));
     let window = unsafe {
         NSWindow::initWithContentRect_styleMask_backing_defer(
             NSWindow::alloc(mtm),
@@ -225,16 +215,30 @@ fn create(x: i32, y: i32, width: i32, height: i32) -> Result<LayeredWindow, Stri
 
     let dirty = Arc::new(AtomicBool::new(true));
     let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
-    let layer = Layer { id, window, view, image, dirty: Arc::clone(&dirty) };
+    let pixels = Pixels(rep.bitmapData());
+    let bytes_per_row = rep.bytesPerRow() as usize;
+    let layer = Layer { id, window, view, rep, size, width, height, dirty: Arc::clone(&dirty) };
     LAYERS.with(|layers| layers.borrow_mut().push(layer));
-    Ok(LayeredWindow {
-        id,
-        pixels: Pixels(rep.bitmapData()),
-        bytes_per_row: rep.bytesPerRow() as usize,
-        width,
-        height,
-        dirty,
-    })
+    Ok(LayeredWindow { id, pixels, bytes_per_row, width, height, dirty })
+}
+
+/// The one shape every rep has: over the given planes, or AppKit's own memory when they are null.
+fn bitmap(planes: *mut *mut u8, width: i32, height: i32, bytes_per_row: isize) -> Option<Retained<NSBitmapImageRep>> {
+    unsafe {
+        NSBitmapImageRep::initWithBitmapDataPlanes_pixelsWide_pixelsHigh_bitsPerSample_samplesPerPixel_hasAlpha_isPlanar_colorSpaceName_bytesPerRow_bitsPerPixel(
+            NSBitmapImageRep::alloc(),
+            planes,
+            width as isize,
+            height as isize,
+            8,
+            4,
+            true,
+            false,
+            objc2_app_kit::NSDeviceRGBColorSpace,
+            bytes_per_row,
+            32,
+        )
+    }
 }
 
 fn frame(map: &DisplayMap) -> NSRect {
