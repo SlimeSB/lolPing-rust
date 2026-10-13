@@ -3,6 +3,8 @@
 set -eu
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 VERSION=${VERSION:-$(sed -n 's/^version = "\(.*\)"/\1/p' "$ROOT/Cargo.toml" | head -1)}
+# Info.plist takes three integers and nothing else, so a pre-release suffix stays out of it.
+PLIST_VERSION=${VERSION%%-*}
 TARGET=${CARGO_TARGET_DIR:-$ROOT/target}
 APP="$TARGET/release/lolPing.app"
 
@@ -10,7 +12,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$TARGET/release/lolPing" "$APP/Contents/MacOS/lolPing"
 cp -R "$ROOT/assets" "$APP/Contents/Resources/assets"
-sed "s/__VERSION__/$VERSION/g" "$ROOT/packaging/mac/Info.plist" > "$APP/Contents/Info.plist"
+sed "s/__VERSION__/$PLIST_VERSION/g" "$ROOT/packaging/mac/Info.plist" > "$APP/Contents/Info.plist"
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
