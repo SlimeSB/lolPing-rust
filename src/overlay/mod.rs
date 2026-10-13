@@ -139,6 +139,9 @@ fn pump_messages() {
 
 fn run(rx: Receiver<Command>, events: Sender<Event>, paths: Paths) {
     let maps = display::displays();
+    if maps.is_empty() {
+        eprintln!("overlay: no display to draw the wheel on");
+    }
     let mut runtimes: Vec<Runtime> = Vec::new();
     for map in &maps {
         match LayeredWindow::new(map.phys.x, map.phys.y, map.phys.width, map.phys.height) {

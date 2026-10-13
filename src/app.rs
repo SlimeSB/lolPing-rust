@@ -189,8 +189,10 @@ impl App {
         for event in events {
             match event.kind {
                 EmitKind::WheelOpen => {
+                    eprintln!("wheel: open at {},{}", event.x, event.y);
                     let maps = display::displays();
                     let Some(local) = display::physical_to_local(event.x, event.y, &maps, None) else {
+                        eprintln!("wheel: no display under {},{}", event.x, event.y);
                         continue;
                     };
                     let kind = wheel_kind(event.wheel);
@@ -956,7 +958,7 @@ fn spawn_hook(settings: &Settings, enabled: bool, sink: Sender<Emit>) -> Option<
         }
     };
     match ready_rx.recv_timeout(Duration::from_secs(5)) {
-        Ok(Ok(_)) => {}
+        Ok(Ok(_)) => eprintln!("input hook: listening"),
         Ok(Err(message)) => {
             eprintln!("input hook: {message}");
             return None;
