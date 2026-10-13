@@ -52,15 +52,25 @@ jobs:
           for window in windows {
               let owner = window[kCGWindowOwnerName as String] as? String ?? "?"
               guard owner.lowercased().contains("lolping") || owner.lowercased().contains("probe") else { continue }
+              let id = window[kCGWindowNumber as String] ?? "?"
               let layer = window[kCGWindowLayer as String] ?? "?"
               let alpha = window[kCGWindowAlpha as String] ?? "?"
               let onscreen = window[kCGWindowIsOnscreen as String] ?? "?"
+              let memory = window[kCGWindowMemoryUsage as String] ?? "?"
               let bounds = window[kCGWindowBounds as String] ?? "?"
-              print("owner=\(owner) layer=\(layer) alpha=\(alpha) onscreen=\(onscreen) bounds=\(bounds)")
+              print("id=\(id) owner=\(owner) layer=\(layer) alpha=\(alpha) onscreen=\(onscreen) memory=\(memory) bounds=\(bounds)")
           }
           print("windows the window server lists: \(windows.count)")
           SWIFT
           swift /tmp/windows.swift > windows.txt 2>&1 || xcrun swift /tmp/windows.swift > windows.txt 2>&1 || echo "swift is not available" > windows.txt
+          probe_id=$(sed -n 's/^id=\([0-9]*\) owner=mac_overlay_probe.*/\1/p' windows.txt)
+          settings_id=$(sed -n 's/^id=\([0-9]*\) owner=lolPing layer=0 .*/\1/p' windows.txt)
+          # The window server renders each window on its own here, so a blank shot means the pixels never reached the window.
+          echo "--- probe window capture ---"
+          if [ -n "$probe_id" ]; then screencapture -x -l "$probe_id" probe-window.png 2>&1 || echo "capturing the probe window failed"; else echo "the window server lists no probe window"; fi
+          # The settings window draws an egui UI, so it says whether capturing a window works at all here.
+          echo "--- settings window capture ---"
+          if [ -n "$settings_id" ]; then screencapture -x -l "$settings_id" app-window.png 2>&1 || echo "capturing the settings window failed"; else echo "the window server lists no settings window"; fi
           kill "$app" || true
           status=0
           wait "$probe" || status=$?
@@ -70,7 +80,7 @@ jobs:
           cat app.log
           echo "--- window list ---"
           cat windows.txt
-          ls -l screen.png || true
+          ls -l *.png || true
           exit "$status"
       - uses: actions/upload-artifact@v4
         if: always()
@@ -81,4 +91,6 @@ jobs:
             app.log
             windows.txt
             screen.png
+            probe-window.png
+            app-window.png
           if-no-files-found: warn
