@@ -1,13 +1,14 @@
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 use objc2::rc::Retained;
 use objc2::{AllocAnyThread, MainThreadMarker, MainThreadOnly};
 use objc2_app_kit::{
-    NSBackingStoreType, NSBitmapImageRep, NSColor, NSImage, NSImageView, NSScreenSaverWindowLevel, NSView, NSWindow,
-    NSWindowCollectionBehavior, NSWindowStyleMask,
+    NSApplication, NSBackingStoreType, NSBitmapImageRep, NSColor, NSImage, NSImageView, NSScreenSaverWindowLevel, NSView,
+    NSWindow, NSWindowCollectionBehavior, NSWindowOcclusionState, NSWindowStyleMask,
 };
 use objc2_core_foundation::{CGPoint, CGSize};
 use objc2_core_graphics::{CGDisplayBounds, CGMainDisplayID};
@@ -20,9 +21,12 @@ type Job = Box<dyn FnOnce() + Send>;
 /// AppKit only runs on the main thread, so the overlay thread leaves its window work here.
 static JOBS: Mutex<Vec<Job>> = Mutex::new(Vec::new());
 static NEXT_ID: AtomicUsize = AtomicUsize::new(1);
+static PRESENTS: AtomicUsize = AtomicUsize::new(0);
+const REPORT_EVERY: Duration = Duration::from_secs(1);
 
 thread_local! {
     static LAYERS: RefCell<Vec<Layer>> = const { RefCell::new(Vec::new()) };
+    static LAST_REPORT: Cell<Option<Instant>> = const { Cell::new(None) };
 }
 
 struct Layer {
@@ -53,6 +57,7 @@ pub fn pump() {
                 layer.image.recache();
                 let view: &NSView = &layer.view;
                 view.setNeedsDisplay(true);
+                report_due("frame", &layer.window, view);
             }
         }
     });
@@ -91,6 +96,11 @@ impl LayeredWindow {
             return Err(format!("short buffer: {} < {}", rgba.len(), count * 4));
         }
         let row_bytes = self.width as usize * 4;
+        let nth = PRESENTS.fetch_add(1, Ordering::Relaxed);
+        if nth < 5 || nth % 30 == 0 {
+            let drawn = rgba.chunks_exact(64).filter(|chunk| chunk[3] != 0).count();
+            eprintln!("overlay present #{nth}: {}x{} drawn_sample={drawn}", self.width, self.height);
+        }
         if self.bytes_per_row == row_bytes {
             unsafe { std::ptr::copy_nonoverlapping(rgba.as_ptr(), self.pixels.0, count * 4) };
         } else {
@@ -117,6 +127,36 @@ impl Drop for LayeredWindow {
             jobs.push(Box::new(move || close(id)));
         }
     }
+}
+
+fn report_due(what: &str, window: &NSWindow, view: &NSView) {
+    LAST_REPORT.with(|last| {
+        if last.get().is_none_or(|at| at.elapsed() >= REPORT_EVERY) {
+            last.set(Some(Instant::now()));
+            report(what, window, view);
+        }
+    });
+}
+
+/// What the window server thinks of an overlay window, which a Mac has to be asked about rather than shown.
+fn report(what: &str, window: &NSWindow, view: &NSView) {
+    let active = MainThreadMarker::new().is_some_and(|mtm| NSApplication::sharedApplication(mtm).isActive());
+    let frame = window.frame();
+    eprintln!(
+        "overlay window {what}: visible={} on_screen={} on_active_space={} app_active={active} key={} level={} behavior={:?} view_hidden={} view_needs_display={} frame={:.0}x{:.0}+{:.0}+{:.0}",
+        window.isVisible(),
+        window.occlusionState().contains(NSWindowOcclusionState::Visible),
+        window.isOnActiveSpace(),
+        window.isKeyWindow(),
+        window.level(),
+        window.collectionBehavior(),
+        view.isHidden(),
+        view.needsDisplay(),
+        frame.size.width,
+        frame.size.height,
+        frame.origin.x,
+        frame.origin.y,
+    );
 }
 
 fn close(id: usize) {
@@ -181,6 +221,7 @@ fn create(x: i32, y: i32, width: i32, height: i32) -> Result<LayeredWindow, Stri
     );
     window.setContentView(Some(&view));
     window.orderFrontRegardless();
+    report("created", &window, &view);
 
     let dirty = Arc::new(AtomicBool::new(true));
     let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
