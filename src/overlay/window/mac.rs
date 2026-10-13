@@ -29,6 +29,7 @@ struct Layer {
     id: usize,
     window: Retained<NSWindow>,
     view: Retained<NSImageView>,
+    image: Retained<NSImage>,
     dirty: Arc<AtomicBool>,
 }
 
@@ -48,6 +49,8 @@ pub fn pump() {
     LAYERS.with(|layers| {
         for layer in layers.borrow().iter() {
             if layer.dirty.swap(false, Ordering::Relaxed) {
+                // The pixels go straight into the rep, so the image must be told to drop its cached copy of them.
+                layer.image.recache();
                 let view: &NSView = &layer.view;
                 view.setNeedsDisplay(true);
             }
@@ -181,7 +184,7 @@ fn create(x: i32, y: i32, width: i32, height: i32) -> Result<LayeredWindow, Stri
 
     let dirty = Arc::new(AtomicBool::new(true));
     let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
-    let layer = Layer { id, window, view, dirty: Arc::clone(&dirty) };
+    let layer = Layer { id, window, view, image, dirty: Arc::clone(&dirty) };
     LAYERS.with(|layers| layers.borrow_mut().push(layer));
     Ok(LayeredWindow {
         id,
