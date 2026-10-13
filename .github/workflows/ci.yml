@@ -18,3 +18,67 @@ jobs:
           targets: aarch64-apple-darwin
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --locked --all-targets --target aarch64-apple-darwin
+
+  overlay:
+    # The Mac overlay has never been run on a Mac, so this runs it: the probe paints a known pattern through the app's own window code, the app runs beside it, and the job keeps both logs, the window list and a screenshot.
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+      - name: Build the app and the probe
+        run: cargo build --locked --target aarch64-apple-darwin --bin lolPing --example mac_overlay_probe
+      - name: Run them and look at the screen
+        run: |
+          set -x
+          bin=target/aarch64-apple-darwin/debug
+          "$bin/examples/mac_overlay_probe" > probe.log 2>&1 &
+          probe=$!
+          sleep 1
+          "$bin/lolPing" > app.log 2>&1 &
+          app=$!
+          sleep 4
+          # /bin/bash holds the Screen Recording grant on the runner image, so this captures the overlays the app paints.
+          screencapture -x screen.png || true
+          cat > /tmp/windows.swift <<'SWIFT'
+          import CoreGraphics
+          import Foundation
+
+          let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
+          for window in windows {
+              let owner = window[kCGWindowOwnerName as String] as? String ?? "?"
+              guard owner.lowercased().contains("lolping") || owner.lowercased().contains("probe") else { continue }
+              let layer = window[kCGWindowLayer as String] ?? "?"
+              let alpha = window[kCGWindowAlpha as String] ?? "?"
+              let onscreen = window[kCGWindowIsOnscreen as String] ?? "?"
+              let bounds = window[kCGWindowBounds as String] ?? "?"
+              print("owner=\(owner) layer=\(layer) alpha=\(alpha) onscreen=\(onscreen) bounds=\(bounds)")
+          }
+          print("windows the window server lists: \(windows.count)")
+          SWIFT
+          swift /tmp/windows.swift > windows.txt 2>&1 || xcrun swift /tmp/windows.swift > windows.txt 2>&1 || echo "swift is not available" > windows.txt
+          kill "$app" || true
+          status=0
+          wait "$probe" || status=$?
+          echo "--- probe log ---"
+          cat probe.log
+          echo "--- app log ---"
+          cat app.log
+          echo "--- window list ---"
+          cat windows.txt
+          ls -l screen.png || true
+          exit "$status"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mac-overlay
+          path: |
+            probe.log
+            app.log
+            windows.txt
+            screen.png
+          if-no-files-found: warn
