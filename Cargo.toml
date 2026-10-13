@@ -1,6 +1,6 @@
 [package]
 name = "lolping"
-version = "0.5.3-beta.2"
+version = "0.5.3-beta.3"
 edition = "2021"
 description = "League of Legends style ping wheel for your Windows desktop"
 license = "MIT"
